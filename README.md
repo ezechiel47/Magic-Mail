@@ -230,11 +230,12 @@ await strapi.plugin('magic-mail').service('email-router').send({
 
 | Feature | FREE | PREMIUM | ADVANCED | ENTERPRISE |
 |---------|------|---------|----------|------------|
-| **Visual Designer** | ✅ (3 templates) | ✅ (10 templates) | ✅ (Unlimited) | ✅ (Unlimited) |
-| **Drag & Drop Editor** | ✅ | ✅ | ✅ | ✅ |
-| **Mustache Variables** | ✅ | ✅ | ✅ | ✅ |
-| **Template Versioning** | ❌ | ❌ | ✅ | ✅ |
-| **Import/Export** | ❌ | ❌ | ✅ | ✅ |
+| **Visual Designer** | ✅ Basic builder | ✅ + template library | ✅ Pro components | ✅ Enterprise suite |
+| **Templates Included** | 25 | 100 | 500 | Unlimited |
+| **Drag & Drop + Mustache** | ✅ | ✅ | ✅ | ✅ |
+| **Import / Export** | ✅ | ✅ | ✅ | ✅ |
+| **Template Versioning** | ❌ | ✅ | ✅ | ✅ |
+| **Analytics** | ❌ | Basic insights | Advanced dashboard | Enterprise analytics |
 | **Custom Blocks** | ❌ | ❌ | ❌ | ✅ |
 | **Team Library** | ❌ | ❌ | ❌ | ✅ |
 | **A/B Testing** | ❌ | ❌ | ❌ | ✅ |
