@@ -1,3 +1,10 @@
+## [1.0.5](https://github.com/Schero94/Magic-Mail/compare/v1.0.4...v1.0.5) (2025-11-23)
+
+
+### Bug Fixes
+
+* load email designer without lazy import ([4832fee](https://github.com/Schero94/Magic-Mail/commit/4832fee7f4e213267419aede9ee897135ac64eee))
+
 ## [1.0.4](https://github.com/Schero94/Magic-Mail/compare/v1.0.3...v1.0.4) (2025-11-23)
 
 
