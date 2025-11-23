@@ -1433,9 +1433,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ## 💬 Support
 
 **Need help?**
-- 📖 [Documentation](https://github.com/Schero94/MagicMail#readme)
-- 🐛 [Report Issues](https://github.com/Schero94/MagicMail/issues)
-- 💡 [Feature Requests](https://github.com/Schero94/MagicMail/discussions)
+- 📖 [Documentation](https://github.com/Schero94/Magic-Mail#readme)
+- 🐛 [Report Issues](https://github.com/Schero94/Magic-Mail/issues)
+- 💡 [Feature Requests](https://github.com/Schero94/Magic-Mail/discussions)
 
 
 ---
@@ -1443,7 +1443,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ## ⭐ Show Your Support
 
 If MagicMail helps your project, please:
-- ⭐ Star the repo on [GitHub](https://github.com/Schero94/MagicMail)
+- ⭐ Star the repo on [GitHub](https://github.com/Schero94/Magic-Mail)
 - 📢 Share with your team
 - 🐦 Tweet about it
 
