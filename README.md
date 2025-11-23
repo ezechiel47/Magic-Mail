@@ -1372,33 +1372,7 @@ We welcome contributions!
 
 ---
 
-## 📝 Changelog
-
-### v1.0.0 (2025-11-13)
-
-**Initial Release** 🎉
-
-**Features:**
-- ✅ 6 Email Providers (Gmail, Microsoft, Yahoo OAuth + SMTP, SendGrid, Mailgun)
-- ✅ OAuth 2.0 Support (Gmail, Microsoft 365, Yahoo Mail)
-- ✅ Smart Routing Rules Engine
-- ✅ Automatic Failover & Rate Limiting
-- ✅ Beautiful Admin UI with Heroicons
-- ✅ Email Analytics Dashboard
-- ✅ Strapi Email Service Override (Email Designer compatible)
-- ✅ Comprehensive Security (TLS 1.2+, DKIM, SPF, DMARC)
-- ✅ GDPR/CAN-SPAM Compliance
-- ✅ Test Features (Direct & Strapi Service)
-- ✅ Encrypted Credential Storage (AES-256-GCM)
-- ✅ Attachment Support (all providers)
-- ✅ Priority Email Headers
-- ✅ List-Unsubscribe Headers
-- ✅ Security Validation
-- ✅ Hourly/Daily Counter Resets
-
----
-
-## 📄 License
+##  License
 
 **MIT License**
 
