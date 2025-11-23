@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/Schero94/Magic-Mail/compare/v1.0.2...v1.0.3) (2025-11-23)
+
+
+### Bug Fixes
+
+* Update email designer editor page ([65fdcc0](https://github.com/Schero94/Magic-Mail/commit/65fdcc0feda08ce8d202a81870ccf7fb28d2f40d))
+
 ## [1.0.1](https://github.com/Schero94/Magic-Mail/compare/v1.0.0...v1.0.1) (2025-11-23)
 
 
