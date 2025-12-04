@@ -3,7 +3,10 @@
 /**
  * Routing Rules Controller
  * Manages email routing rules CRUD operations
+ * [SUCCESS] Migrated to strapi.documents() API (Strapi v5 Best Practice)
  */
+
+const ROUTING_RULE_UID = 'plugin::magic-mail.routing-rule';
 
 module.exports = {
   /**
@@ -11,8 +14,8 @@ module.exports = {
    */
   async getAll(ctx) {
     try {
-      const rules = await strapi.entityService.findMany('plugin::magic-mail.routing-rule', {
-        sort: { priority: 'desc' },
+      const rules = await strapi.documents(ROUTING_RULE_UID).findMany({
+        sort: [{ priority: 'desc' }],
       });
 
       ctx.body = {
@@ -31,7 +34,9 @@ module.exports = {
   async getOne(ctx) {
     try {
       const { ruleId } = ctx.params;
-      const rule = await strapi.entityService.findOne('plugin::magic-mail.routing-rule', ruleId);
+      const rule = await strapi.documents(ROUTING_RULE_UID).findOne({
+        documentId: ruleId,
+      });
 
       if (!rule) {
         ctx.throw(404, 'Routing rule not found');
@@ -53,8 +58,8 @@ module.exports = {
     try {
       const licenseGuard = strapi.plugin('magic-mail').service('license-guard');
 
-      // Check routing rule limit
-      const currentRules = await strapi.entityService.count('plugin::magic-mail.routing-rule');
+      // Check routing rule limit using Document Service count()
+      const currentRules = await strapi.documents(ROUTING_RULE_UID).count();
       const maxRules = await licenseGuard.getMaxRoutingRules();
       
       if (maxRules !== -1 && currentRules >= maxRules) {
@@ -62,7 +67,7 @@ module.exports = {
         return;
       }
 
-      const rule = await strapi.entityService.create('plugin::magic-mail.routing-rule', {
+      const rule = await strapi.documents(ROUTING_RULE_UID).create({
         data: ctx.request.body,
       });
 
@@ -71,7 +76,7 @@ module.exports = {
         message: 'Routing rule created successfully',
       };
 
-      strapi.log.info(`[magic-mail] ✅ Routing rule created: ${rule.name}`);
+      strapi.log.info(`[magic-mail] [SUCCESS] Routing rule created: ${rule.name}`);
     } catch (err) {
       strapi.log.error('[magic-mail] Error creating routing rule:', err);
       ctx.throw(err.status || 500, err.message || 'Error creating routing rule');
@@ -84,7 +89,8 @@ module.exports = {
   async update(ctx) {
     try {
       const { ruleId } = ctx.params;
-      const rule = await strapi.entityService.update('plugin::magic-mail.routing-rule', ruleId, {
+      const rule = await strapi.documents(ROUTING_RULE_UID).update({
+        documentId: ruleId,
         data: ctx.request.body,
       });
 
@@ -93,7 +99,7 @@ module.exports = {
         message: 'Routing rule updated successfully',
       };
 
-      strapi.log.info(`[magic-mail] ✅ Routing rule updated: ${rule.name}`);
+      strapi.log.info(`[magic-mail] [SUCCESS] Routing rule updated: ${rule.name}`);
     } catch (err) {
       strapi.log.error('[magic-mail] Error updating routing rule:', err);
       ctx.throw(500, err.message || 'Error updating routing rule');
@@ -106,7 +112,9 @@ module.exports = {
   async delete(ctx) {
     try {
       const { ruleId } = ctx.params;
-      await strapi.entityService.delete('plugin::magic-mail.routing-rule', ruleId);
+      await strapi.documents(ROUTING_RULE_UID).delete({
+        documentId: ruleId,
+      });
 
       ctx.body = {
         message: 'Routing rule deleted successfully',
@@ -119,4 +127,3 @@ module.exports = {
     }
   },
 };
-

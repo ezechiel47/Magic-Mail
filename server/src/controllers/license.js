@@ -132,7 +132,7 @@ module.exports = ({ strapi }) => ({
       const verification = await licenseGuard.verifyLicense(trimmedKey);
 
       if (!verification.valid) {
-        strapi.log.warn(`[magic-mail] ⚠️  Invalid license key attempted: ${trimmedKey.substring(0, 8)}...`);
+        strapi.log.warn(`[magic-mail] [WARNING]  Invalid license key attempted: ${trimmedKey.substring(0, 8)}...`);
         return ctx.badRequest('Invalid or expired license key');
       }
 
@@ -145,7 +145,7 @@ module.exports = ({ strapi }) => ({
 
       // Verify email matches
       if (license.email.toLowerCase() !== trimmedEmail) {
-        strapi.log.warn(`[magic-mail] ⚠️  Email mismatch for license key`);
+        strapi.log.warn(`[magic-mail] [WARNING]  Email mismatch for license key`);
         return ctx.badRequest('Email address does not match this license key');
       }
 
@@ -162,7 +162,7 @@ module.exports = ({ strapi }) => ({
         data: verification.data,
       };
 
-      strapi.log.info(`[magic-mail] ✅ License validated and stored`);
+      strapi.log.info(`[magic-mail] [SUCCESS] License validated and stored`);
 
       return ctx.send({
         success: true,
@@ -214,10 +214,12 @@ module.exports = ({ strapi }) => ({
       const maxRules = await licenseGuard.getMaxRoutingRules();
       const maxTemplates = await licenseGuard.getMaxEmailTemplates();
       
-      // Get current counts
-      const currentAccounts = await strapi.entityService.count('plugin::magic-mail.email-account');
-      const currentRules = await strapi.entityService.count('plugin::magic-mail.routing-rule');
-      const currentTemplates = await strapi.entityService.count('plugin::magic-mail.email-template');
+      // Get current counts using Document Service count()
+      const [currentAccounts, currentRules, currentTemplates] = await Promise.all([
+        strapi.documents('plugin::magic-mail.email-account').count(),
+        strapi.documents('plugin::magic-mail.routing-rule').count(),
+        strapi.documents('plugin::magic-mail.email-template').count(),
+      ]);
 
       // Get tier info - check both formats
       let tier = 'free';

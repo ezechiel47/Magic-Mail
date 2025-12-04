@@ -118,7 +118,7 @@ module.exports = {
    * Check if a feature is available for given license tier
    */
   hasFeature(licenseData, featureName) {
-   /** console.log(`[features.js] 🔍 hasFeature called with:`, { 
+   /** console.log(`[features.js] [CHECK] hasFeature called with:`, { 
       featureName, 
       hasLicenseData: !!licenseData,
       licenseDataKeys: licenseData ? Object.keys(licenseData) : [],
@@ -131,7 +131,7 @@ module.exports = {
     });
  */
     if (!licenseData) {
-      console.log(`[features.js] ⚠️  No license data → using FREE tier`);
+      console.log(`[features.js] [WARNING]  No license data → using FREE tier`);
       // Demo mode - only free features
       return this.free.features.includes(featureName);
     }
@@ -167,7 +167,7 @@ module.exports = {
       isPremium = true;
     }
 
-/*    console.log(`[features.js] 🔍 Tier detection:`, {
+/*    console.log(`[features.js] [CHECK] Tier detection:`, {
       isEnterprise,
       isAdvanced,
       isPremium,
@@ -182,20 +182,20 @@ module.exports = {
  */
     // Check tiers in order: enterprise > advanced > premium > free
     if (isEnterprise && this.enterprise.features.includes(featureName)) {
-      console.log(`[features.js] ✅ ENTERPRISE tier has feature "${featureName}"`);
+      console.log(`[features.js] [SUCCESS] ENTERPRISE tier has feature "${featureName}"`);
       return true;
     }
     if (isAdvanced && this.advanced.features.includes(featureName)) {
-      console.log(`[features.js] ✅ ADVANCED tier has feature "${featureName}"`);
+      console.log(`[features.js] [SUCCESS] ADVANCED tier has feature "${featureName}"`);
       return true;
     }
     if (isPremium && this.premium.features.includes(featureName)) {
-      console.log(`[features.js] ✅ PREMIUM tier has feature "${featureName}"`);
+      console.log(`[features.js] [SUCCESS] PREMIUM tier has feature "${featureName}"`);
       return true;
     }
     
     const inFree = this.free.features.includes(featureName);
-    console.log(`[features.js] ${inFree ? '✅' : '❌'} FREE tier check for "${featureName}": ${inFree}`);
+    console.log(`[features.js] ${inFree ? '[SUCCESS]' : '[ERROR]'} FREE tier check for "${featureName}": ${inFree}`);
     return inFree;
   },
 

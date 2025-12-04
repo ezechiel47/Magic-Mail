@@ -7,7 +7,7 @@
  */
 
 module.exports = async ({ strapi }) => {
-  strapi.log.info('🚀 [magic-mail] Bootstrap starting...');
+  strapi.log.info('[BOOTSTRAP] [magic-mail] Starting...');
 
   try {
     // Initialize License Guard
@@ -19,7 +19,7 @@ module.exports = async ({ strapi }) => {
       
       if (!licenseStatus.valid && licenseStatus.demo) {
         strapi.log.error('╔════════════════════════════════════════════════════════════════╗');
-        strapi.log.error('║  ❌ MAGICMAIL - NO VALID LICENSE                              ║');
+        strapi.log.error('║  [ERROR] MAGICMAIL - NO VALID LICENSE                         ║');
         strapi.log.error('║                                                                ║');
         strapi.log.error('║  This plugin requires a valid license to operate.             ║');
         strapi.log.error('║  Please activate your license via Admin UI:                   ║');
@@ -28,7 +28,7 @@ module.exports = async ({ strapi }) => {
         strapi.log.error('║  Click "Generate Free License" to get started!                ║');
         strapi.log.error('╚════════════════════════════════════════════════════════════════╝');
       } else if (licenseStatus.gracePeriod) {
-        strapi.log.warn('⚠️  Running on grace period (license server unreachable)');
+        strapi.log.warn('[WARNING] Running on grace period (license server unreachable)');
       }
       // No additional log here, as initialize() already outputs the license box
     }, 2000);
@@ -49,7 +49,7 @@ module.exports = async ({ strapi }) => {
       
       // Override the send method
       originalEmailService.send = async (emailData) => {
-        strapi.log.info('[magic-mail] 📧 Email intercepted from native Strapi service');
+        strapi.log.info('[magic-mail] [EMAIL] Intercepted from native Strapi service');
         strapi.log.debug('[magic-mail] Email data:', {
           to: emailData.to,
           subject: emailData.subject,
@@ -67,10 +67,10 @@ module.exports = async ({ strapi }) => {
           // Route through MagicMail
           const result = await emailRouter.send(emailData);
           
-          strapi.log.info('[magic-mail] ✅ Email routed successfully through MagicMail');
+          strapi.log.info('[magic-mail] [SUCCESS] Email routed successfully through MagicMail');
           return result;
         } catch (magicMailError) {
-          strapi.log.warn('[magic-mail] ⚠️  MagicMail routing failed, falling back to original service');
+          strapi.log.warn('[magic-mail] [WARNING] MagicMail routing failed, falling back to original service');
           strapi.log.error('[magic-mail] Error:', magicMailError.message);
           
           // Fallback to original Strapi email service
@@ -78,11 +78,11 @@ module.exports = async ({ strapi }) => {
         }
       };
       
-      strapi.log.info('[magic-mail] ✅ Native email service overridden!');
-      strapi.log.info('[magic-mail] 💡 All strapi.plugins.email.services.email.send() calls will route through MagicMail');
+      strapi.log.info('[magic-mail] [SUCCESS] Native email service overridden!');
+      strapi.log.info('[magic-mail] [INFO] All strapi.plugins.email.services.email.send() calls will route through MagicMail');
     } else {
-      strapi.log.warn('[magic-mail] ⚠️  Native email service not found - MagicMail will work standalone');
-      strapi.log.warn('[magic-mail] 💡 Make sure @strapi/plugin-email is installed');
+      strapi.log.warn('[magic-mail] [WARNING] Native email service not found - MagicMail will work standalone');
+      strapi.log.warn('[magic-mail] [INFO] Make sure @strapi/plugin-email is installed');
     }
 
     // ============================================================
@@ -98,7 +98,7 @@ module.exports = async ({ strapi }) => {
         }
         const accountMgr = strapi.plugin('magic-mail').service('account-manager');
         await accountMgr.resetCounters('hourly');
-        strapi.log.info('[magic-mail] ✅ Hourly counters reset');
+        strapi.log.info('[magic-mail] [RESET] Hourly counters reset');
       } catch (err) {
         console.error('[magic-mail] Hourly reset error:', err.message);
       }
@@ -121,7 +121,7 @@ module.exports = async ({ strapi }) => {
         }
         const accountMgr = strapi.plugin('magic-mail').service('account-manager');
         await accountMgr.resetCounters('daily');
-        strapi.log.info('[magic-mail] ✅ Daily counters reset');
+        strapi.log.info('[magic-mail] [RESET] Daily counters reset');
 
         // Then set daily interval
         const dailyResetInterval = setInterval(async () => {
@@ -132,7 +132,7 @@ module.exports = async ({ strapi }) => {
             }
             const accountMgr = strapi.plugin('magic-mail').service('account-manager');
             await accountMgr.resetCounters('daily');
-            strapi.log.info('[magic-mail] ✅ Daily counters reset');
+            strapi.log.info('[magic-mail] [RESET] Daily counters reset');
           } catch (err) {
             console.error('[magic-mail] Daily reset error:', err.message);
           }
@@ -145,9 +145,9 @@ module.exports = async ({ strapi }) => {
       }
     }, msUntilMidnight);
 
-    strapi.log.info('[magic-mail] ✅ Counter reset schedules initialized');
-    strapi.log.info('[magic-mail] ✅ Bootstrap complete');
+    strapi.log.info('[magic-mail] [SUCCESS] Counter reset schedules initialized');
+    strapi.log.info('[magic-mail] [SUCCESS] Bootstrap complete');
   } catch (err) {
-    strapi.log.error('[magic-mail] ❌ Bootstrap error:', err);
+    strapi.log.error('[magic-mail] [ERROR] Bootstrap error:', err);
   }
 };

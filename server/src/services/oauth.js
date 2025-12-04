@@ -70,7 +70,7 @@ module.exports = ({ strapi }) => ({
     }
 
     const tokens = await response.json();
-    strapi.log.info('[magic-mail] ✅ Tokens received from Google');
+    strapi.log.info('[magic-mail] [SUCCESS] Tokens received from Google');
 
     if (!tokens.access_token) {
       throw new Error('No access token received from Google');
@@ -89,7 +89,7 @@ module.exports = ({ strapi }) => ({
     }
 
     const userInfo = await userInfoResponse.json();
-    strapi.log.info(`[magic-mail] ✅ Got user email from Google: ${userInfo.email}`);
+    strapi.log.info(`[magic-mail] [SUCCESS] Got user email from Google: ${userInfo.email}`);
 
     if (!userInfo.email) {
       strapi.log.error('[magic-mail] userInfo:', userInfo);
@@ -220,7 +220,7 @@ module.exports = ({ strapi }) => ({
     }
 
     const tokens = await response.json();
-    strapi.log.info('[magic-mail] ✅ Tokens received from Microsoft');
+    strapi.log.info('[magic-mail] [SUCCESS] Tokens received from Microsoft');
     strapi.log.info('[magic-mail] Has access_token:', !!tokens.access_token);
     strapi.log.info('[magic-mail] Has refresh_token:', !!tokens.refresh_token);
     strapi.log.info('[magic-mail] Has id_token:', !!tokens.id_token);
@@ -237,7 +237,7 @@ module.exports = ({ strapi }) => ({
         const payloadBase64 = tokens.id_token.split('.')[1];
         const payload = JSON.parse(Buffer.from(payloadBase64, 'base64').toString());
         email = payload.email || payload.preferred_username || payload.upn;
-        strapi.log.info(`[magic-mail] ✅ Got email from Microsoft ID token: ${email}`);
+        strapi.log.info(`[magic-mail] [SUCCESS] Got email from Microsoft ID token: ${email}`);
       } catch (jwtErr) {
         strapi.log.warn('[magic-mail] Could not decode ID token:', jwtErr.message);
       }
@@ -264,7 +264,7 @@ module.exports = ({ strapi }) => ({
       strapi.log.info('[magic-mail] User info from Graph:', JSON.stringify(userInfo, null, 2));
       
       email = userInfo.mail || userInfo.userPrincipalName;
-      strapi.log.info(`[magic-mail] ✅ Got email from Microsoft Graph: ${email}`);
+      strapi.log.info(`[magic-mail] [SUCCESS] Got email from Microsoft Graph: ${email}`);
     }
 
     if (!email) {
@@ -317,7 +317,7 @@ module.exports = ({ strapi }) => ({
     }
 
     const tokens = await response.json();
-    strapi.log.info('[magic-mail] ✅ Microsoft tokens refreshed successfully');
+    strapi.log.info('[magic-mail] [SUCCESS] Microsoft tokens refreshed successfully');
 
     return {
       accessToken: tokens.access_token,
@@ -388,7 +388,7 @@ module.exports = ({ strapi }) => ({
     }
 
     const tokens = await response.json();
-    strapi.log.info('[magic-mail] ✅ Tokens received from Yahoo');
+    strapi.log.info('[magic-mail] [SUCCESS] Tokens received from Yahoo');
 
     if (!tokens.access_token) {
       throw new Error('No access token received from Yahoo');
@@ -408,7 +408,7 @@ module.exports = ({ strapi }) => ({
 
     const userInfo = await userInfoResponse.json();
     const email = userInfo.email;
-    strapi.log.info(`[magic-mail] ✅ Got email from Yahoo: ${email}`);
+    strapi.log.info(`[magic-mail] [SUCCESS] Got email from Yahoo: ${email}`);
 
     if (!email) {
       throw new Error('Yahoo did not provide email address');
@@ -486,14 +486,14 @@ module.exports = ({ strapi }) => ({
       expiresAt: tokenData.expiresAt,
     });
 
-    const account = await strapi.entityService.create('plugin::magic-mail.email-account', {
+    const account = await strapi.documents('plugin::magic-mail.email-account').create({
       data: {
         name: accountDetails.name,
         description: accountDetails.description || '',
         provider: `${provider}-oauth`,
         config: encryptedConfig,      // OAuth app credentials
         oauth: encryptedOAuth,         // OAuth tokens
-        fromEmail: tokenData.email,    // ✅ Use email from Google, not from accountDetails
+        fromEmail: tokenData.email,    // [SUCCESS] Use email from Google, not from accountDetails
         fromName: accountDetails.fromName || tokenData.email.split('@')[0],
         replyTo: accountDetails.replyTo || tokenData.email,
         isActive: true,
@@ -507,7 +507,7 @@ module.exports = ({ strapi }) => ({
       },
     });
 
-    strapi.log.info(`[magic-mail] ✅ OAuth account created: ${accountDetails.name} (${tokenData.email})`);
+    strapi.log.info(`[magic-mail] [SUCCESS] OAuth account created: ${accountDetails.name} (${tokenData.email})`);
 
     return account;
   },

@@ -30,11 +30,17 @@ module.exports = ({ strapi }) => ({
       templateId = null,      // Template Reference ID
       templateData,           // Data for template rendering
       data,                   // Alias for templateData (for native Strapi compatibility)
+      skipLinkTracking = false, // Skip link rewriting for sensitive URLs (e.g., Magic Links)
     } = emailData;
 
     // Support both 'data' and 'templateData' for backward compatibility
     if (!templateData && data) {
       templateData = data;
+    }
+    
+    // Debug log for skipLinkTracking
+    if (skipLinkTracking) {
+      strapi.log.info(`[magic-mail] [SKIP-TRACK] skipLinkTracking=true received for email to: ${to}`);
     }
 
     // NEW: If templateId/templateReferenceId provided, render template
@@ -53,14 +59,14 @@ module.exports = ({ strapi }) => ({
           const numericTemplateId = Number(templateId);
 
           if (!Number.isNaN(numericTemplateId) && Number.isInteger(numericTemplateId)) {
-            strapi.log.info(`[magic-mail] 🔍 Looking up template by ID: ${numericTemplateId}`);
+            strapi.log.info(`[magic-mail] [CHECK] Looking up template by ID: ${numericTemplateId}`);
             templateRecord = await strapi
               .plugin('magic-mail')
               .service('email-designer')
               .findOne(numericTemplateId);
 
             if (!templateRecord) {
-              strapi.log.error(`[magic-mail] ❌ Template with ID ${numericTemplateId} not found in database`);
+              strapi.log.error(`[magic-mail] [ERROR] Template with ID ${numericTemplateId} not found in database`);
               throw new Error(`Template with ID ${numericTemplateId} not found`);
             }
 
@@ -70,7 +76,7 @@ module.exports = ({ strapi }) => ({
 
             resolvedTemplateReferenceId = String(templateRecord.templateReferenceId).trim();
             strapi.log.info(
-              `[magic-mail] ✅ Found template: ID=${templateRecord.id}, referenceId="${resolvedTemplateReferenceId}", name="${templateRecord.name}"`
+              `[magic-mail] [SUCCESS] Found template: ID=${templateRecord.id}, referenceId="${resolvedTemplateReferenceId}", name="${templateRecord.name}"`
             );
           } else {
             // templateId was provided but not numeric; treat it directly as reference ID
@@ -96,7 +102,7 @@ module.exports = ({ strapi }) => ({
         type = type || renderedTemplate.category; // Use template category if not specified
 
         strapi.log.info(
-          `[magic-mail] 📧 Rendered template reference "${resolvedTemplateReferenceId}" (requested ID: ${templateId ?? 'n/a'}): ${renderedTemplate.templateName}`
+          `[magic-mail] [EMAIL] Rendered template reference "${resolvedTemplateReferenceId}" (requested ID: ${templateId ?? 'n/a'}): ${renderedTemplate.templateName}`
         );
 
         // Ensure templateId/templateName are populated for logging/analytics
@@ -105,7 +111,7 @@ module.exports = ({ strapi }) => ({
           emailData.templateName = templateRecord?.name || renderedTemplate.templateName;
         }
       } catch (error) {
-        strapi.log.error(`[magic-mail] ❌ Template rendering failed: ${error.message}`);
+        strapi.log.error(`[magic-mail] [ERROR] Template rendering failed: ${error.message}`);
         throw new Error(`Template rendering failed: ${error.message}`);
       }
     }
@@ -139,15 +145,20 @@ module.exports = ({ strapi }) => ({
 
         recipientHash = analyticsService.generateRecipientHash(emailLog.emailId, to);
 
-        // Inject tracking pixel
+        // Inject tracking pixel (open tracking)
         html = analyticsService.injectTrackingPixel(html, emailLog.emailId, recipientHash);
 
-        // Rewrite links for click tracking (now async)
-        html = await analyticsService.rewriteLinksForTracking(html, emailLog.emailId, recipientHash);
-
-        strapi.log.info(`[magic-mail] 📊 Tracking enabled for email: ${emailLog.emailId}`);
+        // Rewrite links for click tracking (unless explicitly disabled)
+        // skipLinkTracking is useful for sensitive URLs like Magic Links, password resets, etc.
+        // where the original URL must remain intact for security/UX reasons
+        if (!skipLinkTracking) {
+          html = await analyticsService.rewriteLinksForTracking(html, emailLog.emailId, recipientHash);
+          strapi.log.info(`[magic-mail] [STATS] Full tracking enabled for email: ${emailLog.emailId}`);
+        } else {
+          strapi.log.info(`[magic-mail] [STATS] Open tracking enabled, link tracking DISABLED for email: ${emailLog.emailId}`);
+        }
       } catch (error) {
-        strapi.log.error(`[magic-mail] ⚠️  Tracking setup failed (continuing without tracking):`, error.message);
+        strapi.log.error(`[magic-mail] [WARNING]  Tracking setup failed (continuing without tracking):`, error.message);
         // Continue sending email even if tracking fails
       }
     }
@@ -165,7 +176,7 @@ module.exports = ({ strapi }) => ({
       if (priority === 'high') {
         const hasFeature = await licenseGuard.hasFeature('priority-headers');
         if (!hasFeature) {
-          strapi.log.warn('[magic-mail] ⚠️  High priority emails require Advanced license - using normal priority');
+          strapi.log.warn('[magic-mail] [WARNING]  High priority emails require Advanced license - using normal priority');
           emailData.priority = 'normal';
         }
       }
@@ -203,8 +214,8 @@ module.exports = ({ strapi }) => ({
       // Update email log with account info (if tracking enabled)
       if (emailLog) {
         try {
-          await strapi.db.query('plugin::magic-mail.email-log').update({
-            where: { id: emailLog.id },
+          await strapi.documents('plugin::magic-mail.email-log').update({
+            documentId: emailLog.documentId,
             data: {
               accountId: account.id,
               accountName: account.name,
@@ -217,9 +228,9 @@ module.exports = ({ strapi }) => ({
       }
 
       // Update stats
-      await this.updateAccountStats(account.id);
+      await this.updateAccountStats(account.documentId);
 
-      strapi.log.info(`[magic-mail] ✅ Email sent to ${to} via ${account.name}`);
+      strapi.log.info(`[magic-mail] [SUCCESS] Email sent to ${to} via ${account.name}`);
 
       return {
         success: true,
@@ -227,7 +238,7 @@ module.exports = ({ strapi }) => ({
         messageId: result.messageId,
       };
     } catch (error) {
-      strapi.log.error('[magic-mail] ❌ Email send failed:', error);
+      strapi.log.error('[magic-mail] [ERROR] Email send failed:', error);
 
       throw error;
     }
@@ -237,25 +248,25 @@ module.exports = ({ strapi }) => ({
    * Select best account based on rules
    */
   async selectAccount(type, priority, excludeIds = [], emailData = {}) {
-    // Get all active accounts
-    const accounts = await strapi.entityService.findMany('plugin::magic-mail.email-account', {
+    // Get all active accounts using Document Service
+    const accounts = await strapi.documents('plugin::magic-mail.email-account').findMany({
       filters: {
         isActive: true,
         id: { $notIn: excludeIds },
       },
-      sort: { priority: 'desc' },
+      sort: [{ priority: 'desc' }],
     });
 
     if (!accounts || accounts.length === 0) {
       return null;
     }
 
-    // Get all active routing rules
-    const allRules = await strapi.entityService.findMany('plugin::magic-mail.routing-rule', {
+    // Get all active routing rules using Document Service
+    const allRules = await strapi.documents('plugin::magic-mail.routing-rule').findMany({
       filters: {
         isActive: true,
       },
-      sort: { priority: 'desc' },
+      sort: [{ priority: 'desc' }],
     });
 
     // Check routing rules with different match types
@@ -292,14 +303,14 @@ module.exports = ({ strapi }) => ({
       if (matches) {
         const account = accounts.find(a => a.name === rule.accountName);
         if (account) {
-          strapi.log.info(`[magic-mail] 🎯 Routing rule matched: ${rule.name} → ${account.name}`);
+          strapi.log.info(`[magic-mail] [ROUTE] Routing rule matched: ${rule.name} -> ${account.name}`);
           return account;
         }
         // If primary account not found, try fallback
         if (rule.fallbackAccountName) {
           const fallbackAccount = accounts.find(a => a.name === rule.fallbackAccountName);
           if (fallbackAccount) {
-            strapi.log.info(`[magic-mail] 🔄 Using fallback account: ${fallbackAccount.name}`);
+            strapi.log.info(`[magic-mail] [FALLBACK] Using fallback account: ${fallbackAccount.name}`);
             return fallbackAccount;
           }
         }
@@ -426,7 +437,7 @@ module.exports = ({ strapi }) => ({
         mailOptions.headers['List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click';
         mailOptions.headers['Precedence'] = 'bulk'; // Mark as bulk mail
       } else {
-        strapi.log.warn('[magic-mail] ⚠️ Marketing email without unsubscribe URL - may violate GDPR/CAN-SPAM');
+        strapi.log.warn('[magic-mail] [WARNING] Marketing email without unsubscribe URL - may violate GDPR/CAN-SPAM');
       }
     }
 
@@ -490,7 +501,7 @@ module.exports = ({ strapi }) => ({
         );
         
         currentAccessToken = newTokens.accessToken;
-        strapi.log.info('[magic-mail] ✅ Token refreshed successfully');
+        strapi.log.info('[magic-mail] [SUCCESS] Token refreshed successfully');
         
         // Update stored tokens
         const { encryptCredentials } = require('../utils/encryption');
@@ -500,7 +511,8 @@ module.exports = ({ strapi }) => ({
           expiresAt: newTokens.expiresAt,
         });
         
-        await strapi.entityService.update('plugin::magic-mail.email-account', account.id, {
+        await strapi.documents('plugin::magic-mail.email-account').update({
+          documentId: account.documentId,
           data: { oauth: updatedOAuth },
         });
       } catch (refreshErr) {
@@ -661,14 +673,20 @@ module.exports = ({ strapi }) => ({
       }
       
       const result = await response.json();
-      strapi.log.info('[magic-mail] ✅ Email sent via Gmail API');
+      strapi.log.info('[magic-mail] [SUCCESS] Email sent via Gmail API');
       
       return {
         messageId: result.id,
         response: 'OK',
       };
     } catch (err) {
-      strapi.log.error('[magic-mail] Gmail API send failed:', err);
+      strapi.log.error('[magic-mail] Gmail API send failed:', err.message || err);
+      strapi.log.error('[magic-mail] Error details:', {
+        name: err.name,
+        code: err.code,
+        cause: err.cause?.message || err.cause,
+        stack: err.stack?.split('\n').slice(0, 3).join('\n'),
+      });
       throw err;
     }
   },
@@ -726,7 +744,7 @@ module.exports = ({ strapi }) => ({
         );
         
         currentAccessToken = newTokens.accessToken;
-        strapi.log.info('[magic-mail] ✅ Microsoft token refreshed successfully');
+        strapi.log.info('[magic-mail] [SUCCESS] Microsoft token refreshed successfully');
         
         // Update stored tokens
         const { encryptCredentials } = require('../utils/encryption');
@@ -736,7 +754,8 @@ module.exports = ({ strapi }) => ({
           expiresAt: newTokens.expiresAt,
         });
         
-        await strapi.entityService.update('plugin::magic-mail.email-account', account.id, {
+        await strapi.documents('plugin::magic-mail.email-account').update({
+          documentId: account.documentId,
           data: { oauth: updatedOAuth },
         });
       } catch (refreshErr) {
@@ -886,7 +905,7 @@ module.exports = ({ strapi }) => ({
         throw new Error(`Microsoft Graph API error: ${response.status} - ${response.statusText}`);
       }
       
-      strapi.log.info('[magic-mail] ✅ Email sent via Microsoft Graph API with MIME + custom headers');
+      strapi.log.info('[magic-mail] [SUCCESS] Email sent via Microsoft Graph API with MIME + custom headers');
       strapi.log.info('[magic-mail] Microsoft adds From/DKIM automatically for DMARC compliance');
       
       return {
@@ -942,7 +961,7 @@ module.exports = ({ strapi }) => ({
         );
         
         currentAccessToken = newTokens.accessToken;
-        strapi.log.info('[magic-mail] ✅ Token refreshed successfully');
+        strapi.log.info('[magic-mail] [SUCCESS] Token refreshed successfully');
         
         // Update stored tokens
         const { encryptCredentials } = require('../utils/encryption');
@@ -952,7 +971,8 @@ module.exports = ({ strapi }) => ({
           expiresAt: newTokens.expiresAt,
         });
         
-        await strapi.entityService.update('plugin::magic-mail.email-account', account.id, {
+        await strapi.documents('plugin::magic-mail.email-account').update({
+          documentId: account.documentId,
           data: { oauth: updatedOAuth },
         });
       } catch (refreshErr) {
@@ -1010,7 +1030,7 @@ module.exports = ({ strapi }) => ({
       }
 
       const result = await transporter.sendMail(mailOptions);
-      strapi.log.info('[magic-mail] ✅ Email sent via Yahoo OAuth');
+      strapi.log.info('[magic-mail] [SUCCESS] Email sent via Yahoo OAuth');
       
       return {
         messageId: result.messageId,
@@ -1136,7 +1156,7 @@ module.exports = ({ strapi }) => ({
         throw new Error(`SendGrid API error: ${response.statusText}`);
       }
 
-      strapi.log.info('[magic-mail] ✅ Email sent via SendGrid API');
+      strapi.log.info('[magic-mail] [SUCCESS] Email sent via SendGrid API');
 
       // SendGrid returns 202 Accepted with no body on success
       return {
@@ -1253,7 +1273,7 @@ module.exports = ({ strapi }) => ({
       }
 
       const result = await response.json();
-      strapi.log.info('[magic-mail] ✅ Email sent via Mailgun API');
+      strapi.log.info('[magic-mail] [SUCCESS] Email sent via Mailgun API');
 
       return {
         messageId: result.id || `mailgun-${Date.now()}`,
@@ -1280,11 +1300,17 @@ module.exports = ({ strapi }) => ({
 
   /**
    * Update account statistics
+   * Note: This function now expects documentId
    */
-  async updateAccountStats(accountId) {
-    const account = await strapi.entityService.findOne('plugin::magic-mail.email-account', accountId);
+  async updateAccountStats(documentId) {
+    const account = await strapi.documents('plugin::magic-mail.email-account').findOne({
+      documentId,
+    });
 
-    await strapi.entityService.update('plugin::magic-mail.email-account', accountId, {
+    if (!account) return;
+
+    await strapi.documents('plugin::magic-mail.email-account').update({
+      documentId,
       data: {
         emailsSentToday: (account.emailsSentToday || 0) + 1,
         emailsSentThisHour: (account.emailsSentThisHour || 0) + 1,
@@ -1310,7 +1336,7 @@ module.exports = ({ strapi }) => ({
    * Get account by name
    */
   async getAccountByName(name) {
-    const accounts = await strapi.entityService.findMany('plugin::magic-mail.email-account', {
+    const accounts = await strapi.documents('plugin::magic-mail.email-account').findMany({
       filters: { name, isActive: true },
       limit: 1,
     });
@@ -1379,7 +1405,7 @@ module.exports = ({ strapi }) => ({
       strapi.log.warn('[magic-mail] Email has HTML but no text alternative - may reduce deliverability');
     }
 
-    strapi.log.info('[magic-mail] ✅ Email security validation passed');
+    strapi.log.info('[magic-mail] [SUCCESS] Email security validation passed');
   },
 
   /**

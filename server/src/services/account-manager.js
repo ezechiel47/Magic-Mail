@@ -5,9 +5,33 @@ const { encryptCredentials, decryptCredentials } = require('../utils/encryption'
 /**
  * Account Manager Service
  * Manages email accounts (create, update, test, delete)
+ * [SUCCESS] Migrated to strapi.documents() API (Strapi v5 Best Practice)
  */
 
+const EMAIL_ACCOUNT_UID = 'plugin::magic-mail.email-account';
+
 module.exports = ({ strapi }) => ({
+  /**
+   * Resolves account ID to documentId (handles both numeric id and documentId)
+   * @param {string|number} idOrDocumentId - Either numeric id or documentId
+   * @returns {Promise<string|null>} The documentId or null if not found
+   */
+  async resolveDocumentId(idOrDocumentId) {
+    // If it looks like a documentId (not purely numeric), use directly
+    if (idOrDocumentId && !/^\d+$/.test(String(idOrDocumentId))) {
+      return String(idOrDocumentId);
+    }
+    
+    // Otherwise, find by numeric id
+    const accounts = await strapi.documents(EMAIL_ACCOUNT_UID).findMany({
+      filters: { id: Number(idOrDocumentId) },
+      fields: ['documentId'],
+      limit: 1,
+    });
+    
+    return accounts.length > 0 ? accounts[0].documentId : null;
+  },
+
   /**
    * Create new email account
    */
@@ -35,7 +59,7 @@ module.exports = ({ strapi }) => ({
       await this.unsetAllPrimary();
     }
 
-    const account = await strapi.entityService.create('plugin::magic-mail.email-account', {
+    const account = await strapi.documents(EMAIL_ACCOUNT_UID).create({
       data: {
         name,
         provider,
@@ -54,7 +78,7 @@ module.exports = ({ strapi }) => ({
       },
     });
 
-    strapi.log.info(`[magic-mail] ✅ Email account created: ${name}`);
+    strapi.log.info(`[magic-mail] [SUCCESS] Email account created: ${name}`);
 
     return account;
   },
@@ -62,8 +86,15 @@ module.exports = ({ strapi }) => ({
   /**
    * Update email account
    */
-  async updateAccount(accountId, accountData) {
-    const existingAccount = await strapi.entityService.findOne('plugin::magic-mail.email-account', accountId);
+  async updateAccount(idOrDocumentId, accountData) {
+    const documentId = await this.resolveDocumentId(idOrDocumentId);
+    if (!documentId) {
+      throw new Error('Account not found');
+    }
+    
+    const existingAccount = await strapi.documents(EMAIL_ACCOUNT_UID).findOne({
+      documentId,
+    });
     
     if (!existingAccount) {
       throw new Error('Account not found');
@@ -92,7 +123,8 @@ module.exports = ({ strapi }) => ({
       await this.unsetAllPrimary();
     }
 
-    const updatedAccount = await strapi.entityService.update('plugin::magic-mail.email-account', accountId, {
+    const updatedAccount = await strapi.documents(EMAIL_ACCOUNT_UID).update({
+      documentId,
       data: {
         name,
         description,
@@ -109,7 +141,7 @@ module.exports = ({ strapi }) => ({
       },
     });
 
-    strapi.log.info(`[magic-mail] ✅ Email account updated: ${name} (Active: ${isActive})`);
+    strapi.log.info(`[magic-mail] [SUCCESS] Email account updated: ${name} (Active: ${isActive})`);
 
     return updatedAccount;
   },
@@ -117,8 +149,15 @@ module.exports = ({ strapi }) => ({
   /**
    * Test email account
    */
-  async testAccount(accountId, testEmail, testOptions = {}) {
-    const account = await strapi.entityService.findOne('plugin::magic-mail.email-account', accountId);
+  async testAccount(idOrDocumentId, testEmail, testOptions = {}) {
+    const documentId = await this.resolveDocumentId(idOrDocumentId);
+    if (!documentId) {
+      throw new Error('Account not found');
+    }
+    
+    const account = await strapi.documents(EMAIL_ACCOUNT_UID).findOne({
+      documentId,
+    });
 
     if (!account) {
       throw new Error('Account not found');
@@ -198,8 +237,8 @@ module.exports = ({ strapi }) => ({
    * Get all accounts
    */
   async getAllAccounts() {
-    const accounts = await strapi.entityService.findMany('plugin::magic-mail.email-account', {
-      sort: { priority: 'desc' },
+    const accounts = await strapi.documents(EMAIL_ACCOUNT_UID).findMany({
+      sort: [{ priority: 'desc' }],
     });
 
     // Don't return encrypted config in list
@@ -212,8 +251,15 @@ module.exports = ({ strapi }) => ({
   /**
    * Get single account with decrypted config (for editing)
    */
-  async getAccountWithDecryptedConfig(accountId) {
-    const account = await strapi.entityService.findOne('plugin::magic-mail.email-account', accountId);
+  async getAccountWithDecryptedConfig(idOrDocumentId) {
+    const documentId = await this.resolveDocumentId(idOrDocumentId);
+    if (!documentId) {
+      throw new Error('Account not found');
+    }
+    
+    const account = await strapi.documents(EMAIL_ACCOUNT_UID).findOne({
+      documentId,
+    });
     
     if (!account) {
       throw new Error('Account not found');
@@ -231,21 +277,27 @@ module.exports = ({ strapi }) => ({
   /**
    * Delete account
    */
-  async deleteAccount(accountId) {
-    await strapi.entityService.delete('plugin::magic-mail.email-account', accountId);
-    strapi.log.info(`[magic-mail] Account deleted: ${accountId}`);
+  async deleteAccount(idOrDocumentId) {
+    const documentId = await this.resolveDocumentId(idOrDocumentId);
+    if (!documentId) {
+      throw new Error('Account not found');
+    }
+    
+    await strapi.documents(EMAIL_ACCOUNT_UID).delete({ documentId });
+    strapi.log.info(`[magic-mail] Account deleted: ${documentId}`);
   },
 
   /**
    * Unset all primary flags
    */
   async unsetAllPrimary() {
-    const accounts = await strapi.entityService.findMany('plugin::magic-mail.email-account', {
+    const accounts = await strapi.documents(EMAIL_ACCOUNT_UID).findMany({
       filters: { isPrimary: true },
     });
 
     for (const account of accounts) {
-      await strapi.entityService.update('plugin::magic-mail.email-account', account.id, {
+      await strapi.documents(EMAIL_ACCOUNT_UID).update({
+        documentId: account.documentId,
         data: { isPrimary: false },
       });
     }
@@ -255,7 +307,7 @@ module.exports = ({ strapi }) => ({
    * Reset daily/hourly counters (called by cron)
    */
   async resetCounters(type = 'daily') {
-    const accounts = await strapi.entityService.findMany('plugin::magic-mail.email-account');
+    const accounts = await strapi.documents(EMAIL_ACCOUNT_UID).findMany({});
 
     for (const account of accounts) {
       const updateData = {};
@@ -266,12 +318,12 @@ module.exports = ({ strapi }) => ({
         updateData.emailsSentThisHour = 0;
       }
 
-      await strapi.entityService.update('plugin::magic-mail.email-account', account.id, {
+      await strapi.documents(EMAIL_ACCOUNT_UID).update({
+        documentId: account.documentId,
         data: updateData,
       });
     }
 
-    strapi.log.info(`[magic-mail] ✅ ${type} counters reset`);
+    strapi.log.info(`[magic-mail] [SUCCESS] ${type} counters reset`);
   },
 });
-

@@ -39,8 +39,8 @@ module.exports = {
         return;
       }
 
-      // Check account limit
-      const currentAccounts = await strapi.entityService.count('plugin::magic-mail.email-account');
+      // Check account limit using Document Service count()
+      const currentAccounts = await strapi.documents('plugin::magic-mail.email-account').count();
       const maxAccounts = await licenseGuard.getMaxAccounts();
       
       if (maxAccounts !== -1 && currentAccounts >= maxAccounts) {
@@ -135,9 +135,9 @@ module.exports = {
       }
 
       strapi.log.info('[magic-mail] 🧪 Testing Strapi Email Service integration...');
-      strapi.log.info('[magic-mail] 📧 Calling strapi.plugin("email").service("email").send()');
+      strapi.log.info('[magic-mail] [EMAIL] Calling strapi.plugin("email").service("email").send()');
       if (accountName) {
-        strapi.log.info(`[magic-mail] 🎯 Forcing specific account: ${accountName}`);
+        strapi.log.info(`[magic-mail] [FORCE] Forcing specific account: ${accountName}`);
       }
 
       // Call native Strapi email service - should be intercepted by MagicMail!
@@ -166,6 +166,15 @@ module.exports = {
                 <li>Statistics tracking</li>
               </ul>
             </div>
+            <div style="background: #DCFCE7; border: 1px solid #22C55E; border-radius: 8px; padding: 15px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #15803D;">Security Features Active</h3>
+              <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>TLS/SSL Encryption enforced</li>
+                <li>Email content validated</li>
+                <li>Proper headers included</li>
+                <li>Message-ID generated</li>
+              </ul>
+            </div>
             <p style="color: #6B7280; font-size: 14px; margin-top: 30px;">
               Sent at: ${new Date().toLocaleString()}<br>
               Via: MagicMail Email Router
@@ -176,7 +185,7 @@ module.exports = {
         accountName: accountName || null, // Force specific account if provided
       });
 
-      strapi.log.info('[magic-mail] ✅ Strapi Email Service test completed');
+      strapi.log.info('[magic-mail] [SUCCESS] Strapi Email Service test completed');
 
       ctx.body = {
         success: true,
@@ -189,7 +198,7 @@ module.exports = {
         },
       };
     } catch (err) {
-      strapi.log.error('[magic-mail] ❌ Strapi Email Service test failed:', err);
+      strapi.log.error('[magic-mail] [ERROR] Strapi Email Service test failed:', err);
       ctx.body = {
         success: false,
         message: 'Failed to send test email',

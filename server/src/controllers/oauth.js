@@ -56,7 +56,7 @@ module.exports = {
             </style>
           </head>
           <body>
-            <div class="error">❌ OAuth Authorization Failed</div>
+            <div class="error">[ERROR] OAuth Authorization Failed</div>
             <p>Error: ${error}</p>
             <p>You can close this window and try again.</p>
             <script>
@@ -93,7 +93,7 @@ module.exports = {
           </style>
         </head>
         <body>
-          <div class="success">✅</div>
+          <div class="success">[SUCCESS]</div>
           <div class="message">Gmail OAuth Authorized!</div>
           <div class="note">Closing window...</div>
           <script>
@@ -177,7 +177,7 @@ module.exports = {
             </style>
           </head>
           <body>
-            <div class="error">❌ OAuth Authorization Failed</div>
+            <div class="error">[ERROR] OAuth Authorization Failed</div>
             <p>Error: ${error}</p>
             <p>You can close this window and try again.</p>
             <script>
@@ -214,7 +214,7 @@ module.exports = {
           </style>
         </head>
         <body>
-          <div class="success">✅</div>
+          <div class="success">[SUCCESS]</div>
           <div class="message">Microsoft OAuth Authorized!</div>
           <div class="note">Closing window...</div>
           <script>
@@ -293,7 +293,7 @@ module.exports = {
             </style>
           </head>
           <body>
-            <div class="error">❌ OAuth Authorization Failed</div>
+            <div class="error">[ERROR] OAuth Authorization Failed</div>
             <p>Error: ${error}</p>
             <p>You can close this window and try again.</p>
             <script>
@@ -330,7 +330,7 @@ module.exports = {
           </style>
         </head>
         <body>
-          <div class="success">✅</div>
+          <div class="success">[SUCCESS]</div>
           <div class="message">Yahoo Mail OAuth Authorized!</div>
           <div class="note">Closing window...</div>
           <script>
@@ -388,8 +388,8 @@ module.exports = {
         return;
       }
 
-      // Check account limit
-      const currentAccounts = await strapi.entityService.count('plugin::magic-mail.email-account');
+      // Check account limit using Document Service count()
+      const currentAccounts = await strapi.documents('plugin::magic-mail.email-account').count();
       const maxAccounts = await licenseGuard.getMaxAccounts();
       
       if (maxAccounts !== -1 && currentAccounts >= maxAccounts) {
@@ -457,7 +457,7 @@ module.exports = {
         accountDetails.config // contains clientId and clientSecret
       );
 
-      strapi.log.info('[magic-mail] ✅ OAuth account created successfully');
+      strapi.log.info('[magic-mail] [SUCCESS] OAuth account created successfully');
 
       ctx.body = {
         success: true,

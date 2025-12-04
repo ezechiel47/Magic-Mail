@@ -1,9 +1,14 @@
 /**
  * Analytics Controller
  * Handles tracking endpoints and analytics API
+ * [SUCCESS] Migrated to strapi.documents() API (Strapi v5 Best Practice)
  */
 
 'use strict';
+
+const EMAIL_LOG_UID = 'plugin::magic-mail.email-log';
+const EMAIL_EVENT_UID = 'plugin::magic-mail.email-event';
+const EMAIL_ACCOUNT_UID = 'plugin::magic-mail.email-account';
 
 module.exports = ({ strapi }) => ({
   /**
@@ -61,7 +66,8 @@ module.exports = ({ strapi }) => ({
   async getStats(ctx) {
     try {
       const filters = {
-        userId: ctx.query.userId ? parseInt(ctx.query.userId) : null,
+        // userId is documentId (string) in Strapi v5, NOT parseInt!
+        userId: ctx.query.userId || null,
         templateId: ctx.query.templateId ? parseInt(ctx.query.templateId) : null,
         accountId: ctx.query.accountId ? parseInt(ctx.query.accountId) : null,
         dateFrom: ctx.query.dateFrom || null,
@@ -89,7 +95,8 @@ module.exports = ({ strapi }) => ({
   async getEmailLogs(ctx) {
     try {
       const filters = {
-        userId: ctx.query.userId ? parseInt(ctx.query.userId) : null,
+        // userId is documentId (string) in Strapi v5, NOT parseInt!
+        userId: ctx.query.userId || null,
         templateId: ctx.query.templateId ? parseInt(ctx.query.templateId) : null,
         search: ctx.query.search || null,
       };
@@ -145,15 +152,17 @@ module.exports = ({ strapi }) => ({
   /**
    * Get user email activity
    * GET /magic-mail/analytics/users/:userId
+   * Note: userId is documentId (string) in Strapi v5
    */
   async getUserActivity(ctx) {
     try {
       const { userId } = ctx.params;
 
+      // userId is documentId (string) in Strapi v5, NOT parseInt!
       const activity = await strapi
         .plugin('magic-mail')
         .service('analytics')
-        .getUserActivity(parseInt(userId));
+        .getUserActivity(userId);
 
       return ctx.send({
         success: true,
@@ -170,18 +179,18 @@ module.exports = ({ strapi }) => ({
    */
   async debug(ctx) {
     try {
-      strapi.log.info('[magic-mail] 🔍 Running Analytics Debug...');
+      strapi.log.info('[magic-mail] [CHECK] Running Analytics Debug...');
 
-      // Get email logs
-      const emailLogs = await strapi.db.query('plugin::magic-mail.email-log').findMany({
+      // Get email logs using Document Service
+      const emailLogs = await strapi.documents(EMAIL_LOG_UID).findMany({
         limit: 10,
-        orderBy: { sentAt: 'DESC' },
+        sort: [{ sentAt: 'desc' }],
       });
 
-      // Get email events
-      const emailEvents = await strapi.db.query('plugin::magic-mail.email-event').findMany({
+      // Get email events using Document Service
+      const emailEvents = await strapi.documents(EMAIL_EVENT_UID).findMany({
         limit: 20,
-        orderBy: { timestamp: 'DESC' },
+        sort: [{ timestamp: 'desc' }],
         populate: ['emailLog'],
       });
 
@@ -189,8 +198,8 @@ module.exports = ({ strapi }) => ({
       const analyticsService = strapi.plugin('magic-mail').service('analytics');
       const stats = await analyticsService.getStats();
 
-      // Get active accounts
-      const accounts = await strapi.entityService.findMany('plugin::magic-mail.email-account', {
+      // Get active accounts using Document Service
+      const accounts = await strapi.documents(EMAIL_ACCOUNT_UID).findMany({
         filters: { isActive: true },
         fields: ['id', 'name', 'provider', 'fromEmail', 'emailsSentToday', 'totalEmailsSent'],
       });
@@ -260,26 +269,28 @@ module.exports = ({ strapi }) => ({
     try {
       const { emailId } = ctx.params;
 
-      // Find email log
-      const emailLog = await strapi.db.query('plugin::magic-mail.email-log').findOne({
-        where: { emailId },
+      // Find email log using Document Service
+      const emailLog = await strapi.documents(EMAIL_LOG_UID).findFirst({
+        filters: { emailId },
       });
 
       if (!emailLog) {
         return ctx.notFound('Email log not found');
       }
 
-      // Delete associated events first
-      await strapi.db.query('plugin::magic-mail.email-event').deleteMany({
-        where: { emailLog: emailLog.id },
+      // Delete associated events - filter relation with documentId object (Strapi v5)
+      const events = await strapi.documents(EMAIL_EVENT_UID).findMany({
+        filters: { emailLog: { documentId: emailLog.documentId } },
       });
+
+      for (const event of events) {
+        await strapi.documents(EMAIL_EVENT_UID).delete({ documentId: event.documentId });
+      }
 
       // Delete email log
-      await strapi.db.query('plugin::magic-mail.email-log').delete({
-        where: { id: emailLog.id },
-      });
+      await strapi.documents(EMAIL_LOG_UID).delete({ documentId: emailLog.documentId });
 
-      strapi.log.info(`[magic-mail] 🗑️  Deleted email log: ${emailId}`);
+      strapi.log.info(`[magic-mail] [DELETE]  Deleted email log: ${emailId}`);
 
       return ctx.send({
         success: true,
@@ -300,20 +311,19 @@ module.exports = ({ strapi }) => ({
       // Optional: Add query params for filtered deletion
       const { olderThan } = ctx.query; // e.g., ?olderThan=2024-01-01
 
-      const where = {};
+      const filters = {};
       if (olderThan) {
-        where.sentAt = { $lt: new Date(olderThan) };
+        filters.sentAt = { $lt: new Date(olderThan) };
       }
 
-      // Get all email logs to delete
-      const emailLogs = await strapi.db.query('plugin::magic-mail.email-log').findMany({
-        where,
-        select: ['id'],
+      // Get all email logs to delete using Document Service
+      const emailLogs = await strapi.documents(EMAIL_LOG_UID).findMany({
+        filters,
+        fields: ['id', 'documentId'],
+        limit: 100000,
       });
 
-      const emailLogIds = emailLogs.map(log => log.id);
-
-      if (emailLogIds.length === 0) {
+      if (emailLogs.length === 0) {
         return ctx.send({
           success: true,
           message: 'No email logs to delete',
@@ -321,22 +331,27 @@ module.exports = ({ strapi }) => ({
         });
       }
 
-      // Delete all associated events
-      await strapi.db.query('plugin::magic-mail.email-event').deleteMany({
-        where: { emailLog: { $in: emailLogIds } },
+      // Delete all associated events and logs
+      for (const log of emailLogs) {
+        // Delete events for this log - filter relation with documentId object (Strapi v5)
+        const events = await strapi.documents(EMAIL_EVENT_UID).findMany({
+          filters: { emailLog: { documentId: log.documentId } },
       });
 
-      // Delete all email logs
-      await strapi.db.query('plugin::magic-mail.email-log').deleteMany({
-        where: { id: { $in: emailLogIds } },
-      });
+        for (const event of events) {
+          await strapi.documents(EMAIL_EVENT_UID).delete({ documentId: event.documentId });
+        }
 
-      strapi.log.info(`[magic-mail] 🗑️  Cleared ${emailLogIds.length} email logs`);
+        // Delete the log itself
+        await strapi.documents(EMAIL_LOG_UID).delete({ documentId: log.documentId });
+      }
+
+      strapi.log.info(`[magic-mail] [DELETE]  Cleared ${emailLogs.length} email logs`);
 
       return ctx.send({
         success: true,
-        message: `Successfully deleted ${emailLogIds.length} email log(s)`,
-        deletedCount: emailLogIds.length,
+        message: `Successfully deleted ${emailLogs.length} email log(s)`,
+        deletedCount: emailLogs.length,
       });
     } catch (error) {
       strapi.log.error('[magic-mail] Error clearing email logs:', error);
@@ -344,4 +359,3 @@ module.exports = ({ strapi }) => ({
     }
   },
 });
-

@@ -15,7 +15,7 @@ function getEncryptionKey() {
     return crypto.createHash('sha256').update(envKey).digest();
   }
   
-  console.warn('[magic-mail] ⚠️  No MAGIC_MAIL_ENCRYPTION_KEY found. Using fallback.');
+  console.warn('[magic-mail] [WARNING]  No MAGIC_MAIL_ENCRYPTION_KEY found. Using fallback.');
   return crypto.createHash('sha256').update('magic-mail-default-key').digest();
 }
 

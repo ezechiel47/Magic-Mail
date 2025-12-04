@@ -1,11 +1,18 @@
 /**
  * Analytics Service
  * Handles email tracking, statistics, and user activity
+ * 
+ * [SUCCESS] Migrated to strapi.documents() API (Strapi v5 Best Practice)
  */
 
 'use strict';
 
 const crypto = require('crypto');
+
+// Content Type UIDs
+const EMAIL_LOG_UID = 'plugin::magic-mail.email-log';
+const EMAIL_EVENT_UID = 'plugin::magic-mail.email-event';
+const EMAIL_LINK_UID = 'plugin::magic-mail.email-link';
 
 module.exports = ({ strapi }) => ({
   /**
@@ -32,7 +39,7 @@ module.exports = ({ strapi }) => ({
   async createEmailLog(data) {
     const emailId = this.generateEmailId();
     
-    const logEntry = await strapi.db.query('plugin::magic-mail.email-log').create({
+    const logEntry = await strapi.documents(EMAIL_LOG_UID).create({
       data: {
         emailId,
         user: data.userId || null,
@@ -48,9 +55,9 @@ module.exports = ({ strapi }) => ({
       },
     });
 
-    strapi.log.info(`[magic-mail] ✅ Email log created: ${emailId}`);
+    strapi.log.info(`[magic-mail] [SUCCESS] Email log created: ${emailId}`);
     if (data.templateId) {
-      strapi.log.info(`[magic-mail] 📋 Template tracked: ${data.templateName || 'Unknown'} (ID: ${data.templateId})`);
+      strapi.log.info(`[magic-mail] [INFO] Template tracked: ${data.templateName || 'Unknown'} (ID: ${data.templateId})`);
     }
     return logEntry;
   },
@@ -60,9 +67,9 @@ module.exports = ({ strapi }) => ({
    */
   async recordOpen(emailId, recipientHash, req) {
     try {
-      // Find email log
-      const emailLog = await strapi.db.query('plugin::magic-mail.email-log').findOne({
-        where: { emailId },
+      // Find email log using Document Service
+      const emailLog = await strapi.documents(EMAIL_LOG_UID).findFirst({
+        filters: { emailId },
       });
 
       if (!emailLog) {
@@ -79,20 +86,20 @@ module.exports = ({ strapi }) => ({
 
       const now = new Date();
 
-      // Update email log counters
-      await strapi.db.query('plugin::magic-mail.email-log').update({
-        where: { id: emailLog.id },
+      // Update email log counters using Document Service
+      await strapi.documents(EMAIL_LOG_UID).update({
+        documentId: emailLog.documentId,
         data: {
-          openCount: emailLog.openCount + 1,
+          openCount: (emailLog.openCount || 0) + 1,
           firstOpenedAt: emailLog.firstOpenedAt || now,
           lastOpenedAt: now,
         },
       });
 
       // Create event record
-      const event = await strapi.db.query('plugin::magic-mail.email-event').create({
+      const event = await strapi.documents(EMAIL_EVENT_UID).create({
         data: {
-          emailLog: emailLog.id,
+          emailLog: emailLog.documentId,
           type: 'open',
           timestamp: now,
           ipAddress: req.ip || req.headers['x-forwarded-for'] || null,
@@ -101,7 +108,7 @@ module.exports = ({ strapi }) => ({
         },
       });
 
-      strapi.log.info(`[magic-mail] 📧 Email opened: ${emailId} (count: ${emailLog.openCount + 1})`);
+      strapi.log.info(`[magic-mail] [EMAIL] Email opened: ${emailId} (count: ${(emailLog.openCount || 0) + 1})`);
       return event;
     } catch (error) {
       strapi.log.error('[magic-mail] Error recording open:', error);
@@ -114,9 +121,9 @@ module.exports = ({ strapi }) => ({
    */
   async recordClick(emailId, linkHash, recipientHash, targetUrl, req) {
     try {
-      // Find email log
-      const emailLog = await strapi.db.query('plugin::magic-mail.email-log').findOne({
-        where: { emailId },
+      // Find email log using Document Service
+      const emailLog = await strapi.documents(EMAIL_LOG_UID).findFirst({
+        filters: { emailId },
       });
 
       if (!emailLog) {
@@ -132,17 +139,17 @@ module.exports = ({ strapi }) => ({
       const now = new Date();
 
       // Update click count
-      await strapi.db.query('plugin::magic-mail.email-log').update({
-        where: { id: emailLog.id },
+      await strapi.documents(EMAIL_LOG_UID).update({
+        documentId: emailLog.documentId,
         data: {
-          clickCount: emailLog.clickCount + 1,
+          clickCount: (emailLog.clickCount || 0) + 1,
         },
       });
 
       // Create event record
-      const event = await strapi.db.query('plugin::magic-mail.email-event').create({
+      const event = await strapi.documents(EMAIL_EVENT_UID).create({
         data: {
-          emailLog: emailLog.id,
+          emailLog: emailLog.documentId,
           type: 'click',
           timestamp: now,
           ipAddress: req.ip || req.headers['x-forwarded-for'] || null,
@@ -152,7 +159,7 @@ module.exports = ({ strapi }) => ({
         },
       });
 
-      strapi.log.info(`[magic-mail] 🖱️  Link clicked: ${emailId} → ${targetUrl}`);
+      strapi.log.info(`[magic-mail] [CLICK] Link clicked: ${emailId} -> ${targetUrl}`);
       return event;
     } catch (error) {
       strapi.log.error('[magic-mail] Error recording click:', error);
@@ -162,36 +169,41 @@ module.exports = ({ strapi }) => ({
 
   /**
    * Get analytics statistics
+   * Note: Document Service doesn't have count() - using findMany for counting
    */
   async getStats(filters = {}) {
-    const where = {};
+    const baseFilters = {};
     
+    // Filter by user relation - use documentId for Strapi v5
     if (filters.userId) {
-      where.user = filters.userId;
+      baseFilters.user = { documentId: filters.userId };
     }
     if (filters.templateId) {
-      where.templateId = filters.templateId;
+      baseFilters.templateId = filters.templateId;
     }
     if (filters.accountId) {
-      where.accountId = filters.accountId;
+      baseFilters.accountId = filters.accountId;
     }
     if (filters.dateFrom) {
-      where.sentAt = { $gte: new Date(filters.dateFrom) };
+      baseFilters.sentAt = { $gte: new Date(filters.dateFrom) };
     }
     if (filters.dateTo) {
-      where.sentAt = { ...where.sentAt, $lte: new Date(filters.dateTo) };
+      baseFilters.sentAt = { ...baseFilters.sentAt, $lte: new Date(filters.dateTo) };
     }
 
+    // Use native count() method for efficient counting with filters
     const [totalSent, totalOpened, totalClicked, totalBounced] = await Promise.all([
-      strapi.db.query('plugin::magic-mail.email-log').count({ where }),
-      strapi.db.query('plugin::magic-mail.email-log').count({
-        where: { ...where, openCount: { $gt: 0 } },
+      strapi.documents(EMAIL_LOG_UID).count({
+        filters: baseFilters,
       }),
-      strapi.db.query('plugin::magic-mail.email-log').count({
-        where: { ...where, clickCount: { $gt: 0 } },
+      strapi.documents(EMAIL_LOG_UID).count({
+        filters: { ...baseFilters, openCount: { $gt: 0 } },
       }),
-      strapi.db.query('plugin::magic-mail.email-log').count({
-        where: { ...where, bounced: true },
+      strapi.documents(EMAIL_LOG_UID).count({
+        filters: { ...baseFilters, clickCount: { $gt: 0 } },
+      }),
+      strapi.documents(EMAIL_LOG_UID).count({
+        filters: { ...baseFilters, bounced: true },
       }),
     ]);
 
@@ -216,8 +228,9 @@ module.exports = ({ strapi }) => ({
   async getEmailLogs(filters = {}, pagination = {}) {
     const where = {};
     
+    // Filter by user relation - use documentId for Strapi v5
     if (filters.userId) {
-      where.user = filters.userId;
+      where.user = { documentId: filters.userId };
     }
     if (filters.templateId) {
       where.templateId = filters.templateId;
@@ -234,14 +247,17 @@ module.exports = ({ strapi }) => ({
     const pageSize = pagination.pageSize || 25;
 
     const [logs, total] = await Promise.all([
-      strapi.db.query('plugin::magic-mail.email-log').findMany({
-        where,
-        orderBy: { sentAt: 'desc' },
+      strapi.documents(EMAIL_LOG_UID).findMany({
+        filters: where,
+        sort: [{ sentAt: 'desc' }],
         limit: pageSize,
         offset: (page - 1) * pageSize,
         populate: ['user'],
       }),
-      strapi.db.query('plugin::magic-mail.email-log').count({ where }),
+      // Get total count using native count() method
+      strapi.documents(EMAIL_LOG_UID).count({
+        filters: where,
+      }),
     ]);
 
     return {
@@ -259,8 +275,8 @@ module.exports = ({ strapi }) => ({
    * Get email log details with events
    */
   async getEmailLogDetails(emailId) {
-    const emailLog = await strapi.db.query('plugin::magic-mail.email-log').findOne({
-      where: { emailId },
+    const emailLog = await strapi.documents(EMAIL_LOG_UID).findFirst({
+      filters: { emailId },
       populate: ['user', 'events'],
     });
 
@@ -271,9 +287,10 @@ module.exports = ({ strapi }) => ({
    * Get user email activity
    */
   async getUserActivity(userId) {
-    const emailLogs = await strapi.db.query('plugin::magic-mail.email-log').findMany({
-      where: { user: userId },
-      orderBy: { sentAt: 'desc' },
+    // Filter by user relation - use documentId for Strapi v5
+    const emailLogs = await strapi.documents(EMAIL_LOG_UID).findMany({
+      filters: { user: { documentId: userId } },
+      sort: [{ sentAt: 'desc' }],
       limit: 50,
     });
 
@@ -326,8 +343,8 @@ module.exports = ({ strapi }) => ({
     const baseUrl = strapi.config.get('server.url') || 'http://localhost:1337';
     
     // Get the email log for storing link associations
-    const emailLog = await strapi.db.query('plugin::magic-mail.email-log').findOne({
-      where: { emailId },
+    const emailLog = await strapi.documents(EMAIL_LOG_UID).findFirst({
+      filters: { emailId },
     });
 
     if (!emailLog) {
@@ -351,17 +368,17 @@ module.exports = ({ strapi }) => ({
       const originalUrl = match[1];
       
       // Debug: Log what we found
-      strapi.log.debug(`[magic-mail] 🔍 Found link: ${originalUrl.substring(0, 100)}${originalUrl.length > 100 ? '...' : ''}`);
+      strapi.log.debug(`[magic-mail] [CHECK] Found link: ${originalUrl.substring(0, 100)}${originalUrl.length > 100 ? '...' : ''}`);
       
       // Skip if already a tracking link or anchor
       if (originalUrl.startsWith('#') || originalUrl.includes('/track/click/')) {
-        strapi.log.debug(`[magic-mail] ⏭️  Skipping (anchor or already tracked)`);
+        strapi.log.debug(`[magic-mail] [SKIP] Skipping (anchor or already tracked)`);
         continue;
       }
 
       // Skip relative URLs without protocol (internal anchors, relative paths)
       if (!originalUrl.match(/^https?:\/\//i) && !originalUrl.startsWith('/')) {
-        strapi.log.debug(`[magic-mail] ⏭️  Skipping relative URL: ${originalUrl}`);
+        strapi.log.debug(`[magic-mail] [SKIP] Skipping relative URL: ${originalUrl}`);
         continue;
       }
 
@@ -378,7 +395,7 @@ module.exports = ({ strapi }) => ({
       const trackingUrl = `${baseUrl}/api/magic-mail/track/click/${emailId}/${linkHash}/${recipientHash}`;
       
       linkCount++;
-      strapi.log.info(`[magic-mail] 🔗 Link ${linkCount}: ${originalUrl} → ${trackingUrl}`);
+      strapi.log.info(`[magic-mail] [LINK] Link ${linkCount}: ${originalUrl} → ${trackingUrl}`);
       
       // Store replacement info
       replacements.push({
@@ -390,7 +407,7 @@ module.exports = ({ strapi }) => ({
     // Store all link mappings in database
     for (const mapping of linkMappings) {
       try {
-        await this.storeLinkMapping(emailLog.id, mapping.linkHash, mapping.originalUrl);
+        await this.storeLinkMapping(emailLog.documentId, mapping.linkHash, mapping.originalUrl);
       } catch (err) {
         strapi.log.error('[magic-mail] Error storing link mapping:', err);
       }
@@ -403,9 +420,9 @@ module.exports = ({ strapi }) => ({
     }
     
     if (linkCount > 0) {
-      strapi.log.info(`[magic-mail] ✅ Rewrote ${linkCount} links for click tracking`);
+      strapi.log.info(`[magic-mail] [SUCCESS] Rewrote ${linkCount} links for click tracking`);
     } else {
-      strapi.log.warn(`[magic-mail] ⚠️  No links found in email HTML for tracking!`);
+      strapi.log.warn(`[magic-mail] [WARNING]  No links found in email HTML for tracking!`);
     }
     
     return result;
@@ -414,12 +431,12 @@ module.exports = ({ strapi }) => ({
   /**
    * Store link mapping in database
    */
-  async storeLinkMapping(emailLogId, linkHash, originalUrl) {
+  async storeLinkMapping(emailLogDocId, linkHash, originalUrl) {
     try {
-      // Check if link already exists
-      const existing = await strapi.db.query('plugin::magic-mail.email-link').findOne({
-        where: {
-          emailLog: emailLogId,
+      // Check if link already exists - filter relation with documentId object
+      const existing = await strapi.documents(EMAIL_LINK_UID).findFirst({
+        filters: {
+          emailLog: { documentId: emailLogDocId },
           linkHash,
         },
       });
@@ -430,16 +447,16 @@ module.exports = ({ strapi }) => ({
       }
 
       // Create new link mapping
-      const linkMapping = await strapi.db.query('plugin::magic-mail.email-link').create({
+      const linkMapping = await strapi.documents(EMAIL_LINK_UID).create({
         data: {
-          emailLog: emailLogId,
+          emailLog: emailLogDocId,
           linkHash,
           originalUrl,
           clickCount: 0,
         },
       });
 
-      strapi.log.debug(`[magic-mail] 💾 Stored link mapping: ${linkHash} → ${originalUrl}`);
+      strapi.log.debug(`[magic-mail] [SAVE] Stored link mapping: ${linkHash} → ${originalUrl}`);
       return linkMapping;
     } catch (error) {
       strapi.log.error('[magic-mail] Error storing link mapping:', error);
@@ -453,8 +470,8 @@ module.exports = ({ strapi }) => ({
   async getOriginalUrlFromHash(emailId, linkHash) {
     try {
       // Find the email log
-      const emailLog = await strapi.db.query('plugin::magic-mail.email-log').findOne({
-        where: { emailId },
+      const emailLog = await strapi.documents(EMAIL_LOG_UID).findFirst({
+        filters: { emailId },
       });
 
       if (!emailLog) {
@@ -462,10 +479,10 @@ module.exports = ({ strapi }) => ({
         return null;
       }
 
-      // Find the link mapping
-      const linkMapping = await strapi.db.query('plugin::magic-mail.email-link').findOne({
-        where: {
-          emailLog: emailLog.id,
+      // Find the link mapping - filter relation with documentId object (Strapi v5)
+      const linkMapping = await strapi.documents(EMAIL_LINK_UID).findFirst({
+        filters: {
+          emailLog: { documentId: emailLog.documentId },
           linkHash,
         },
       });
@@ -477,10 +494,10 @@ module.exports = ({ strapi }) => ({
 
       // Update click tracking on the link itself
       const now = new Date();
-      await strapi.db.query('plugin::magic-mail.email-link').update({
-        where: { id: linkMapping.id },
+      await strapi.documents(EMAIL_LINK_UID).update({
+        documentId: linkMapping.documentId,
         data: {
-          clickCount: linkMapping.clickCount + 1,
+          clickCount: (linkMapping.clickCount || 0) + 1,
           firstClickedAt: linkMapping.firstClickedAt || now,
           lastClickedAt: now,
         },
@@ -493,4 +510,3 @@ module.exports = ({ strapi }) => ({
     }
   },
 });
-

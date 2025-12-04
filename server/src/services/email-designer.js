@@ -3,8 +3,7 @@
  * 
  * Handles email template creation, updates, versioning, and rendering
  * 
- * CRITICAL: Uses ONLY entityService for all database operations
- * This ensures proper relation handling in Strapi v5
+ * [SUCCESS] Migrated to strapi.documents() API (Strapi v5 Best Practice)
  */
 
 'use strict';
@@ -12,6 +11,10 @@
 const Mustache = require('mustache');
 const htmlToTextLib = require('html-to-text');
 const decode = require('decode-html');
+
+// Content Type UIDs
+const EMAIL_TEMPLATE_UID = 'plugin::magic-mail.email-template';
+const EMAIL_TEMPLATE_VERSION_UID = 'plugin::magic-mail.email-template-version';
 
 // ============================================================
 // HELPER FUNCTIONS
@@ -70,26 +73,39 @@ module.exports = ({ strapi }) => ({
    * Get all templates
    */
   async findAll(filters = {}) {
-    return strapi.entityService.findMany('plugin::magic-mail.email-template', {
+    return strapi.documents(EMAIL_TEMPLATE_UID).findMany({
       filters,
-      sort: { createdAt: 'desc' },
+      sort: [{ createdAt: 'desc' }],
     });
   },
 
   /**
-   * Get template by ID with populated versions
+   * Get template by ID (documentId) with populated versions
    */
-  async findOne(id) {
-    return strapi.entityService.findOne('plugin::magic-mail.email-template', id, {
+  async findOne(documentId) {
+    return strapi.documents(EMAIL_TEMPLATE_UID).findOne({
+      documentId,
       populate: ['versions'],
     });
+  },
+
+  /**
+   * Get template by numeric ID (for backward compatibility)
+   */
+  async findById(id) {
+    const results = await strapi.documents(EMAIL_TEMPLATE_UID).findMany({
+      filters: { id },
+      limit: 1,
+      populate: ['versions'],
+    });
+    return results.length > 0 ? results[0] : null;
   },
 
   /**
    * Get template by reference ID
    */
   async findByReferenceId(templateReferenceId) {
-    const results = await strapi.entityService.findMany('plugin::magic-mail.email-template', {
+    const results = await strapi.documents(EMAIL_TEMPLATE_UID).findMany({
       filters: { templateReferenceId },
       limit: 1,
     });
@@ -98,15 +114,9 @@ module.exports = ({ strapi }) => ({
 
   /**
    * Create new template with automatic initial version
-   * 
-   * Steps:
-   * 1. Check license limits
-   * 2. Validate reference ID is unique
-   * 3. Create template
-   * 4. Create initial version (if versioning enabled)
    */
   async create(data) {
-    strapi.log.info('[magic-mail] 📝 Creating new template...');
+    strapi.log.info('[magic-mail] [TEST] Creating new template...');
 
     // 1. Check license limits
     const maxTemplates = await strapi
@@ -114,9 +124,8 @@ module.exports = ({ strapi }) => ({
       .service('license-guard')
       .getMaxEmailTemplates();
 
-    const currentCount = await strapi.db
-      .query('plugin::magic-mail.email-template')
-      .count();
+    // Use native count() method for efficiency
+    const currentCount = await strapi.documents(EMAIL_TEMPLATE_UID).count();
 
     if (maxTemplates !== -1 && currentCount >= maxTemplates) {
       throw new Error(
@@ -133,14 +142,14 @@ module.exports = ({ strapi }) => ({
     }
 
     // 3. Create template
-    const template = await strapi.entityService.create('plugin::magic-mail.email-template', {
+    const template = await strapi.documents(EMAIL_TEMPLATE_UID).create({
       data: {
         ...data,
         isActive: data.isActive !== undefined ? data.isActive : true,
       },
     });
 
-    strapi.log.info(`[magic-mail] ✅ Template created: ID=${template.id}, name="${template.name}"`);
+    strapi.log.info(`[magic-mail] [SUCCESS] Template created: documentId=${template.documentId}, name="${template.name}"`);
 
     // 4. Create initial version if versioning enabled
     const hasVersioning = await strapi
@@ -149,9 +158,9 @@ module.exports = ({ strapi }) => ({
       .hasFeature('email-designer-versioning');
 
     if (hasVersioning) {
-      strapi.log.info('[magic-mail] 💾 Creating initial version...');
+      strapi.log.info('[magic-mail] [SAVE] Creating initial version...');
       
-      await this.createVersion(template.id, {
+      await this.createVersion(template.documentId, {
         name: data.name,
         subject: data.subject,
         design: data.design,
@@ -160,9 +169,9 @@ module.exports = ({ strapi }) => ({
         tags: data.tags,
       });
       
-      strapi.log.info('[magic-mail] ✅ Initial version created');
+      strapi.log.info('[magic-mail] [SUCCESS] Initial version created');
     } else {
-      strapi.log.info('[magic-mail] ⏭️  Versioning not enabled, skipping initial version');
+      strapi.log.info('[magic-mail] [SKIP] Versioning not enabled, skipping initial version');
     }
 
     return template;
@@ -170,24 +179,17 @@ module.exports = ({ strapi }) => ({
 
   /**
    * Update template with automatic version snapshot
-   * 
-   * Steps:
-   * 1. Load existing template
-   * 2. Create version snapshot of CURRENT state (before update)
-   * 3. Update template with new data
-   * 
-   * IMPORTANT: Version is created BEFORE update to preserve old state!
    */
-  async update(id, data) {
-    strapi.log.info(`[magic-mail] 🔄 Updating template ID: ${id}`);
+  async update(documentId, data) {
+    strapi.log.info(`[magic-mail] [UPDATE] Updating template documentId: ${documentId}`);
     
     // 1. Load existing template
-    const template = await this.findOne(id);
+    const template = await this.findOne(documentId);
     if (!template) {
       throw new Error('Template not found');
     }
 
-    strapi.log.info(`[magic-mail] 📋 Found template: ID=${template.id}, name="${template.name}"`);
+    strapi.log.info(`[magic-mail] [INFO] Found template: documentId=${template.documentId}, name="${template.name}"`);
 
     // 2. Create version snapshot BEFORE update (if versioning enabled)
     const hasVersioning = await strapi
@@ -196,10 +198,9 @@ module.exports = ({ strapi }) => ({
       .hasFeature('email-designer-versioning');
 
     if (hasVersioning) {
-      strapi.log.info('[magic-mail] 💾 Creating version snapshot before update...');
+      strapi.log.info('[magic-mail] [SAVE] Creating version snapshot before update...');
       
-      // Save CURRENT state as new version
-      await this.createVersion(template.id, {
+      await this.createVersion(template.documentId, {
         name: template.name,
         subject: template.subject,
         design: template.design,
@@ -208,48 +209,40 @@ module.exports = ({ strapi }) => ({
         tags: template.tags,
       });
       
-      strapi.log.info('[magic-mail] ✅ Version snapshot created');
-    } else {
-      strapi.log.info('[magic-mail] ⏭️  Versioning not enabled, skipping version snapshot');
+      strapi.log.info('[magic-mail] [SUCCESS] Version snapshot created');
     }
 
     // 3. Update template
-    // CRITICAL: Do NOT pass versions in data, it would overwrite the relation!
-    // Only update the fields that are explicitly provided
     const updateData = { ...data };
-    
-    // Remove any versions field if it exists (shouldn't, but be safe)
     if ('versions' in updateData) {
       delete updateData.versions;
-      strapi.log.warn('[magic-mail] ⚠️  Removed versions field from update data to prevent relation overwrite');
+      strapi.log.warn('[magic-mail] [WARNING]  Removed versions field from update data');
     }
     
-    const updated = await strapi.entityService.update('plugin::magic-mail.email-template', id, {
+    const updated = await strapi.documents(EMAIL_TEMPLATE_UID).update({
+      documentId,
       data: updateData,
     });
     
-    strapi.log.info(`[magic-mail] ✅ Template updated: ID=${updated.id}, versions preserved`);
+    strapi.log.info(`[magic-mail] [SUCCESS] Template updated: documentId=${updated.documentId}`);
     return updated;
   },
 
   /**
    * Delete template and all its versions
-   * 
-   * Uses Document Service for version deletion to ensure cascading delete
    */
-  async delete(id) {
-    strapi.log.info(`[magic-mail] 🗑️  Deleting template ID: ${id}`);
+  async delete(documentId) {
+    strapi.log.info(`[magic-mail] [DELETE]  Deleting template documentId: ${documentId}`);
     
-    // Get template first
-      const template = await this.findOne(id);
+    const template = await this.findOne(documentId);
       if (!template) {
         throw new Error('Template not found');
       }
 
-    strapi.log.info(`[magic-mail] 🗑️  Template: ID=${template.id}, name="${template.name}"`);
+    strapi.log.info(`[magic-mail] [DELETE]  Template: documentId=${template.documentId}, name="${template.name}"`);
 
-    // Delete all versions using Document Service (supports documentId filtering)
-      const allVersions = await strapi.documents('plugin::magic-mail.email-template-version').findMany({
+    // Delete all versions
+    const allVersions = await strapi.documents(EMAIL_TEMPLATE_VERSION_UID).findMany({
         filters: {
           template: {
             documentId: template.documentId,
@@ -257,47 +250,39 @@ module.exports = ({ strapi }) => ({
         },
       });
 
-      strapi.log.info(`[magic-mail] 🗑️  Found ${allVersions.length} versions to delete`);
+      strapi.log.info(`[magic-mail] [DELETE]  Found ${allVersions.length} versions to delete`);
 
-    // Delete each version
       for (const version of allVersions) {
         try {
-          await strapi
-            .documents('plugin::magic-mail.email-template-version')
-            .delete({ documentId: version.documentId });
-        
-        strapi.log.info(`[magic-mail] 🗑️  Deleted version #${version.versionNumber}`);
+        await strapi.documents(EMAIL_TEMPLATE_VERSION_UID).delete({ 
+          documentId: version.documentId 
+        });
+        strapi.log.info(`[magic-mail] [DELETE]  Deleted version #${version.versionNumber}`);
         } catch (versionError) {
-          strapi.log.warn(`[magic-mail] ⚠️  Failed to delete version ${version.id}: ${versionError.message}`);
+        strapi.log.warn(`[magic-mail] [WARNING]  Failed to delete version: ${versionError.message}`);
         }
       }
 
     // Delete template
-      const result = await strapi.entityService.delete('plugin::magic-mail.email-template', id);
+    const result = await strapi.documents(EMAIL_TEMPLATE_UID).delete({ documentId });
       
-    strapi.log.info(`[magic-mail] ✅ Template "${template.name}" and ${allVersions.length} versions deleted`);
-      
+    strapi.log.info(`[magic-mail] [SUCCESS] Template "${template.name}" and ${allVersions.length} versions deleted`);
       return result;
   },
 
   /**
    * Duplicate template
-   * 
-   * Creates a copy of an existing template with " copy" suffix
-   * Does NOT copy versions, starts fresh
    */
-  async duplicate(id) {
-    strapi.log.info(`[magic-mail] 📋 Duplicating template ID: ${id}`);
+  async duplicate(documentId) {
+    strapi.log.info(`[magic-mail] [INFO] Duplicating template documentId: ${documentId}`);
 
-    // Get original template
-    const original = await this.findOne(id);
+    const original = await this.findOne(documentId);
     if (!original) {
       throw new Error('Template not found');
     }
 
-    strapi.log.info(`[magic-mail] 📦 Original template: ID=${original.id}, name="${original.name}"`);
+    strapi.log.info(`[magic-mail] [PACKAGE] Original template: documentId=${original.documentId}, name="${original.name}"`);
 
-    // Prepare duplicate data (remove system fields)
     const duplicateData = {
       name: `${original.name} copy`,
       subject: original.subject,
@@ -307,15 +292,12 @@ module.exports = ({ strapi }) => ({
       category: original.category,
       tags: original.tags,
       isActive: original.isActive,
-      // Generate new templateReferenceId (unique ID)
       templateReferenceId: Date.now() + Math.floor(Math.random() * 1000),
     };
 
-    // Create duplicate
     const duplicated = await this.create(duplicateData);
 
-    strapi.log.info(`[magic-mail] ✅ Template duplicated: ID=${duplicated.id}, name="${duplicated.name}"`);
-
+    strapi.log.info(`[magic-mail] [SUCCESS] Template duplicated: documentId=${duplicated.documentId}`);
     return duplicated;
   },
 
@@ -325,95 +307,57 @@ module.exports = ({ strapi }) => ({
 
   /**
    * Create a new version for a template
-   * 
-   * CRITICAL: This is THE ONLY function that creates versions!
-   * 
-   * Steps:
-   * 1. Verify template exists
-   * 2. Calculate next version number
-   * 3. Create version WITH template relation
-   * 
-   * @param {number} templateId - Numeric ID of template
-   * @param {object} data - Version data (name, subject, bodyHtml, etc)
-   * @returns {object} Created version
    */
-  async createVersion(templateId, data) {
-    strapi.log.info(`[magic-mail] 📸 Creating version for template ID: ${templateId}`);
+  async createVersion(templateDocumentId, data) {
+    strapi.log.info(`[magic-mail] [SNAPSHOT] Creating version for template documentId: ${templateDocumentId}`);
 
     // 1. Verify template exists
-    const template = await strapi.entityService.findOne('plugin::magic-mail.email-template', templateId);
+    const template = await strapi.documents(EMAIL_TEMPLATE_UID).findOne({
+      documentId: templateDocumentId,
+    });
     if (!template) {
-      throw new Error(`Template ${templateId} not found`);
+      throw new Error(`Template ${templateDocumentId} not found`);
     }
 
-    strapi.log.info(`[magic-mail] 📦 Template found: ID=${template.id}, name="${template.name}"`);
+    strapi.log.info(`[magic-mail] [PACKAGE] Template found: documentId=${template.documentId}, name="${template.name}"`);
 
     // 2. Calculate next version number
-    const existingVersions = await strapi.entityService.findMany('plugin::magic-mail.email-template-version', {
+    const existingVersions = await strapi.documents(EMAIL_TEMPLATE_VERSION_UID).findMany({
       filters: {
         template: {
-          id: templateId, // Use numeric ID in filter
+          documentId: templateDocumentId,
         },
       },
-      sort: { versionNumber: 'desc' },
+      sort: [{ versionNumber: 'desc' }],
     });
 
     const versionNumber = existingVersions.length > 0 
       ? Math.max(...existingVersions.map(v => v.versionNumber || 0)) + 1
       : 1;
 
-    strapi.log.info(`[magic-mail] 📊 Existing versions: ${existingVersions.length} → Next version: #${versionNumber}`);
+    strapi.log.info(`[magic-mail] [STATS] Existing versions: ${existingVersions.length} → Next version: #${versionNumber}`);
 
     // 3. Create version WITH template relation
-    // In Strapi v5, we need to use connect for relations!
-    const createdVersion = await strapi.entityService.create('plugin::magic-mail.email-template-version', {
+    const createdVersion = await strapi.documents(EMAIL_TEMPLATE_VERSION_UID).create({
       data: {
         versionNumber,
         ...data,
-        template: {
-          connect: [templateId],  // ✅ Use connect array for Strapi v5!
-        },
+        template: templateDocumentId, // Document Service handles relations with documentId
       },
     });
 
-    strapi.log.info(`[magic-mail] 📝 Version created with connect: ID=${createdVersion.id}`);
-
-    // 4. Verify the relation was created by loading with populate
-    const verifiedVersion = await strapi.entityService.findOne(
-      'plugin::magic-mail.email-template-version',
-      createdVersion.id,
-      {
-        populate: ['template'],
-      }
-    );
-
-    strapi.log.info(
-      `[magic-mail] ✅ Version created successfully:\n` +
-      `   - Version ID: ${createdVersion.id}\n` +
-      `   - Version #: ${versionNumber}\n` +
-      `   - Template ID: ${templateId}\n` +
-      `   - Has template relation: ${!!verifiedVersion.template}\n` +
-      `   - Template in DB: ${verifiedVersion.template?.id || 'NULL'}`
-    );
-
-    if (!verifiedVersion.template) {
-      strapi.log.error(
-        `[magic-mail] ❌ CRITICAL: Version ${createdVersion.id} was created but template relation was NOT set!\n` +
-        `   This is a Strapi v5 relation bug. Investigating...`
-    );
-    }
-
-    return verifiedVersion;
+    strapi.log.info(`[magic-mail] [SUCCESS] Version created: documentId=${createdVersion.documentId}, v${versionNumber}`);
+    return createdVersion;
   },
 
   /**
    * Get all versions for a template
    */
-  async getVersions(templateId) {
-    strapi.log.info(`[magic-mail] 📜 Fetching versions for template ID: ${templateId}`);
+  async getVersions(templateDocumentId) {
+    strapi.log.info(`[magic-mail] 📜 Fetching versions for template documentId: ${templateDocumentId}`);
 
-    // Verify template exists
-    const template = await strapi.entityService.findOne('plugin::magic-mail.email-template', templateId, {
+    const template = await strapi.documents(EMAIL_TEMPLATE_UID).findOne({
+      documentId: templateDocumentId,
       populate: ['versions'],
     });
     
@@ -421,46 +365,35 @@ module.exports = ({ strapi }) => ({
       throw new Error('Template not found');
     }
 
-    strapi.log.info(`[magic-mail] 📦 Template has ${template.versions?.length || 0} versions in relation`);
+    strapi.log.info(`[magic-mail] [PACKAGE] Template has ${template.versions?.length || 0} versions`);
 
-    // OPTION 1: Return versions from template populate (most reliable!)
     if (template.versions && template.versions.length > 0) {
-      // Sort by version number
       const sortedVersions = [...template.versions].sort((a, b) => b.versionNumber - a.versionNumber);
-      
-      strapi.log.info(`[magic-mail] ✅ Returning ${sortedVersions.length} versions from template populate`);
       return sortedVersions;
     }
 
-    // OPTION 2: Fallback - try finding with filter (shouldn't be needed)
-    strapi.log.warn(`[magic-mail] ⚠️  Template has no populated versions, trying filter...`);
-    
-    const versions = await strapi.entityService.findMany('plugin::magic-mail.email-template-version', {
+    // Fallback: find via filter
+    const versions = await strapi.documents(EMAIL_TEMPLATE_VERSION_UID).findMany({
       filters: {
         template: {
-          id: templateId,
+          documentId: templateDocumentId,
         },
       },
-      sort: { versionNumber: 'desc' },
-      populate: ['template'],
+      sort: [{ versionNumber: 'desc' }],
     });
 
-    strapi.log.info(`[magic-mail] ✅ Found ${versions.length} versions via filter`);
-    
+    strapi.log.info(`[magic-mail] [SUCCESS] Found ${versions.length} versions`);
     return versions;
   },
 
   /**
    * Restore template from a specific version
-   * 
-   * Updates the template with data from the version
-   * This will create a NEW version snapshot (via update logic)
    */
-  async restoreVersion(templateId, versionId) {
-    strapi.log.info(`[magic-mail] 🔄 Restoring template ${templateId} from version ${versionId}`);
+  async restoreVersion(templateDocumentId, versionDocumentId) {
+    strapi.log.info(`[magic-mail] [RESTORE] Restoring template ${templateDocumentId} from version ${versionDocumentId}`);
 
-    // Get version
-    const version = await strapi.entityService.findOne('plugin::magic-mail.email-template-version', versionId, {
+    const version = await strapi.documents(EMAIL_TEMPLATE_VERSION_UID).findOne({
+      documentId: versionDocumentId,
       populate: ['template'],
     });
 
@@ -468,37 +401,13 @@ module.exports = ({ strapi }) => ({
       throw new Error('Version not found');
     }
 
-    strapi.log.info(`[magic-mail] 📦 Version found: ID=${version.id}, versionNumber=${version.versionNumber}, has template: ${!!version.template}`);
-
     // Verify version belongs to this template
-    // For new versions (with relation): check template.id
-    if (version.template?.id) {
-      if (version.template.id !== parseInt(templateId)) {
-        strapi.log.error(`[magic-mail] ❌ Version ${versionId} belongs to template ${version.template.id}, not ${templateId}`);
-        throw new Error('Version does not belong to this template');
-      }
-      strapi.log.info(`[magic-mail] ✅ Version has correct template relation`);
-    } else {
-      // For old versions (without relation): verify via template's versions array
-      strapi.log.warn(`[magic-mail] ⚠️  Version ${versionId} has no template relation, checking template's versions array...`);
-      
-      const template = await strapi.entityService.findOne('plugin::magic-mail.email-template', templateId, {
-        populate: ['versions'],
-      });
-      
-      const versionExists = template.versions && template.versions.some(v => v.id === parseInt(versionId));
-      
-      if (!versionExists) {
-        strapi.log.error(`[magic-mail] ❌ Version ${versionId} not found in template ${templateId} versions array`);
+    if (version.template?.documentId !== templateDocumentId) {
       throw new Error('Version does not belong to this template');
     }
 
-      strapi.log.info(`[magic-mail] ✅ Version ${versionId} found in template's versions array (old version without relation)`);
-    }
-
-    // Update template with version data
-    // This will automatically create a snapshot version via update()
-    const restored = await this.update(templateId, {
+    // Update template with version data (creates new version via update)
+    const restored = await this.update(templateDocumentId, {
       name: version.name,
       subject: version.subject,
       design: version.design,
@@ -507,22 +416,18 @@ module.exports = ({ strapi }) => ({
       tags: version.tags,
     });
 
-    strapi.log.info(`[magic-mail] ✅ Template restored from version #${version.versionNumber}`);
-    
+    strapi.log.info(`[magic-mail] [SUCCESS] Template restored from version #${version.versionNumber}`);
     return restored;
   },
 
   /**
    * Delete a single version
-   * 
-   * @param {number} templateId - Template ID (for verification)
-   * @param {number} versionId - Version ID to delete
    */
-  async deleteVersion(templateId, versionId) {
-    strapi.log.info(`[magic-mail] 🗑️  Deleting version ${versionId} from template ${templateId}`);
+  async deleteVersion(templateDocumentId, versionDocumentId) {
+    strapi.log.info(`[magic-mail] [DELETE]  Deleting version ${versionDocumentId}`);
 
-    // Get version
-    const version = await strapi.entityService.findOne('plugin::magic-mail.email-template-version', versionId, {
+    const version = await strapi.documents(EMAIL_TEMPLATE_VERSION_UID).findOne({
+      documentId: versionDocumentId,
       populate: ['template'],
     });
 
@@ -530,48 +435,26 @@ module.exports = ({ strapi }) => ({
       throw new Error('Version not found');
     }
 
-    // Verify version belongs to this template (same logic as restore)
-    if (version.template?.id) {
-      if (version.template.id !== parseInt(templateId)) {
-        strapi.log.error(`[magic-mail] ❌ Version ${versionId} belongs to template ${version.template.id}, not ${templateId}`);
+    if (version.template?.documentId !== templateDocumentId) {
         throw new Error('Version does not belong to this template');
       }
-      strapi.log.info(`[magic-mail] ✅ Version has correct template relation`);
-    } else {
-      // Check via template's versions array for old versions
-      strapi.log.warn(`[magic-mail] ⚠️  Version ${versionId} has no template relation, checking template's versions array...`);
-      
-      const template = await strapi.entityService.findOne('plugin::magic-mail.email-template', templateId, {
-        populate: ['versions'],
-      });
-      
-      const versionExists = template.versions && template.versions.some(v => v.id === parseInt(versionId));
-      if (!versionExists) {
-        strapi.log.error(`[magic-mail] ❌ Version ${versionId} not found in template ${templateId} versions array`);
-        throw new Error('Version does not belong to this template');
-      }
-      
-      strapi.log.info(`[magic-mail] ✅ Version ${versionId} found in template's versions array`);
-    }
 
-    // Delete version
-    await strapi.entityService.delete('plugin::magic-mail.email-template-version', versionId);
+    await strapi.documents(EMAIL_TEMPLATE_VERSION_UID).delete({ 
+      documentId: versionDocumentId 
+    });
 
-    strapi.log.info(`[magic-mail] ✅ Version ${versionId} (v${version.versionNumber}) deleted successfully`);
-
+    strapi.log.info(`[magic-mail] [SUCCESS] Version v${version.versionNumber} deleted`);
     return { success: true, message: 'Version deleted' };
   },
 
   /**
    * Delete all versions for a template
-   * 
-   * @param {number} templateId - Template ID
    */
-  async deleteAllVersions(templateId) {
-    strapi.log.info(`[magic-mail] 🗑️  Deleting all versions for template ${templateId}`);
+  async deleteAllVersions(templateDocumentId) {
+    strapi.log.info(`[magic-mail] [DELETE]  Deleting all versions for template ${templateDocumentId}`);
 
-    // Get template with versions
-    const template = await strapi.entityService.findOne('plugin::magic-mail.email-template', templateId, {
+    const template = await strapi.documents(EMAIL_TEMPLATE_UID).findOne({
+      documentId: templateDocumentId,
       populate: ['versions'],
     });
 
@@ -580,36 +463,24 @@ module.exports = ({ strapi }) => ({
     }
 
     const versionCount = template.versions?.length || 0;
-    strapi.log.info(`[magic-mail] 📊 Found ${versionCount} versions to delete`);
-
     if (versionCount === 0) {
       return { success: true, message: 'No versions to delete', deletedCount: 0 };
     }
 
-    // Delete each version
     let deletedCount = 0;
-    const errors = [];
-    
     for (const version of template.versions) {
       try {
-        await strapi.entityService.delete('plugin::magic-mail.email-template-version', version.id);
+        await strapi.documents(EMAIL_TEMPLATE_VERSION_UID).delete({ 
+          documentId: version.documentId 
+        });
         deletedCount++;
-        strapi.log.info(`[magic-mail] 🗑️  Deleted version #${version.versionNumber} (ID: ${version.id})`);
       } catch (error) {
-        strapi.log.error(`[magic-mail] ❌ Failed to delete version ${version.id}: ${error.message}`);
-        errors.push({ versionId: version.id, error: error.message });
+        strapi.log.error(`[magic-mail] [ERROR] Failed to delete version: ${error.message}`);
       }
     }
 
-    strapi.log.info(`[magic-mail] ✅ Deleted ${deletedCount}/${versionCount} versions`);
-
-    return { 
-      success: true, 
-      message: `Deleted ${deletedCount} of ${versionCount} versions`, 
-      deletedCount,
-      failedCount: versionCount - deletedCount,
-      errors: errors.length > 0 ? errors : undefined
-    };
+    strapi.log.info(`[magic-mail] [SUCCESS] Deleted ${deletedCount}/${versionCount} versions`);
+    return { success: true, deletedCount };
   },
 
   // ============================================================
@@ -618,10 +489,6 @@ module.exports = ({ strapi }) => ({
 
   /**
    * Render template with dynamic data using Mustache
-   * 
-   * @param {number} templateReferenceId - Template reference ID
-   * @param {object} data - Dynamic data for Mustache
-   * @returns {object} Rendered HTML, text, and subject
    */
   async renderTemplate(templateReferenceId, data = {}) {
     const template = await this.findByReferenceId(templateReferenceId);
@@ -636,22 +503,19 @@ module.exports = ({ strapi }) => ({
 
     let { bodyHtml = '', bodyText = '', subject = '' } = template;
 
-    // Convert <% %> to {{ }} for Mustache (backward compatibility)
+    // Convert <% %> to {{ }} for Mustache
     bodyHtml = bodyHtml.replace(/<%/g, '{{').replace(/%>/g, '}}');
     bodyText = bodyText.replace(/<%/g, '{{').replace(/%>/g, '}}');
     subject = subject.replace(/<%/g, '{{').replace(/%>/g, '}}');
 
-    // Generate text version from HTML if not provided
     if ((!bodyText || !bodyText.length) && bodyHtml && bodyHtml.length) {
       bodyText = convertHtmlToText(bodyHtml, { wordwrap: 130 });
     }
 
-    // Decode HTML entities
     const decodedHtml = decode(bodyHtml);
     const decodedText = decode(bodyText);
     const decodedSubject = decode(subject);
 
-    // Render with Mustache
     const renderedHtml = Mustache.render(decodedHtml, data);
     const renderedText = Mustache.render(decodedText, data);
     const renderedSubject = Mustache.render(decodedSubject, data);
@@ -666,19 +530,19 @@ module.exports = ({ strapi }) => ({
   },
 
   // ============================================================
-  // IMPORT/EXPORT (Advanced+ License)
+  // IMPORT/EXPORT
   // ============================================================
 
   /**
    * Export templates as JSON
    */
-  async exportTemplates(templateIds = []) {
-    strapi.log.info('[magic-mail] 📤 Exporting templates...');
+  async exportTemplates(templateDocumentIds = []) {
+    strapi.log.info('[magic-mail] [EXPORT] Exporting templates...');
 
     let templates;
-    if (templateIds.length > 0) {
-      templates = await strapi.entityService.findMany('plugin::magic-mail.email-template', {
-        filters: { id: { $in: templateIds } },
+    if (templateDocumentIds.length > 0) {
+      templates = await strapi.documents(EMAIL_TEMPLATE_UID).findMany({
+        filters: { documentId: { $in: templateDocumentIds } },
       });
     } else {
       templates = await this.findAll();
@@ -695,7 +559,7 @@ module.exports = ({ strapi }) => ({
       tags: template.tags,
     }));
 
-    strapi.log.info(`[magic-mail] ✅ Exported ${exported.length} templates`);
+    strapi.log.info(`[magic-mail] [SUCCESS] Exported ${exported.length} templates`);
     return exported;
   },
 
@@ -703,7 +567,7 @@ module.exports = ({ strapi }) => ({
    * Import templates from JSON
    */
   async importTemplates(templates) {
-    strapi.log.info(`[magic-mail] 📥 Importing ${templates.length} templates...`);
+    strapi.log.info(`[magic-mail] [IMPORT] Importing ${templates.length} templates...`);
 
     const results = [];
 
@@ -712,15 +576,11 @@ module.exports = ({ strapi }) => ({
         const existing = await this.findByReferenceId(templateData.templateReferenceId);
 
         if (existing) {
-          // Update existing
-          const updated = await this.update(existing.id, templateData);
+          const updated = await this.update(existing.documentId, templateData);
           results.push({ success: true, action: 'updated', template: updated });
-          strapi.log.info(`[magic-mail] ✅ Updated template: ${templateData.name}`);
         } else {
-          // Create new
           const created = await this.create(templateData);
           results.push({ success: true, action: 'created', template: created });
-          strapi.log.info(`[magic-mail] ✅ Created template: ${templateData.name}`);
         }
       } catch (error) {
         results.push({
@@ -729,12 +589,8 @@ module.exports = ({ strapi }) => ({
           error: error.message,
           templateName: templateData.name,
         });
-        strapi.log.error(`[magic-mail] ❌ Failed to import ${templateData.name}: ${error.message}`);
       }
     }
-
-    const successful = results.filter(r => r.success).length;
-    strapi.log.info(`[magic-mail] ✅ Import completed: ${successful}/${templates.length} templates`);
 
     return results;
   },
@@ -747,14 +603,13 @@ module.exports = ({ strapi }) => ({
    * Get template statistics
    */
   async getStats() {
-    const allTemplates = await strapi.entityService.findMany('plugin::magic-mail.email-template', {
+    const allTemplates = await strapi.documents(EMAIL_TEMPLATE_UID).findMany({
       fields: ['isActive', 'category'],
     });
     
     const total = allTemplates.length;
     const active = allTemplates.filter(t => t.isActive === true).length;
 
-    // Group by category
     const categoryMap = allTemplates.reduce((acc, template) => {
       const category = template.category || 'custom';
       acc[category] = (acc[category] || 0) + 1;
@@ -783,12 +638,9 @@ module.exports = ({ strapi }) => ({
   // ============================================================
 
   /**
-   * Get Strapi core email template (reset-password, email-confirmation)
-   * 
-   * These are stored in users-permissions plugin store
+   * Get Strapi core email template
    */
   async getCoreTemplate(coreEmailType) {
-    // Validate type
       if (!['reset-password', 'email-confirmation'].includes(coreEmailType)) {
         throw new Error('Invalid core email type');
       }
@@ -802,7 +654,6 @@ module.exports = ({ strapi }) => ({
         name: 'users-permissions',
       });
 
-    // Get email config
       const emailConfig = await pluginStore.get({ key: 'email' });
       
       let data = null;
@@ -810,12 +661,11 @@ module.exports = ({ strapi }) => ({
         data = emailConfig[pluginStoreEmailKey];
       }
 
-    // Convert <%= %> to {{ }} for Mustache
-      const messageConverted = data && data.options && data.options.message
+    const messageConverted = data?.options?.message
         ? data.options.message.replace(/<%|&#x3C;%/g, '{{').replace(/%>|%&#x3E;/g, '}}')
         : '';
       
-      const subjectConverted = data && data.options && data.options.object
+    const subjectConverted = data?.options?.object
         ? data.options.object.replace(/<%|&#x3C;%/g, '{{').replace(/%>|%&#x3E;/g, '}}')
         : '';
 
@@ -834,7 +684,6 @@ module.exports = ({ strapi }) => ({
    * Update Strapi core email template
    */
   async updateCoreTemplate(coreEmailType, data) {
-    // Validate type
       if (!['reset-password', 'email-confirmation'].includes(coreEmailType)) {
         throw new Error('Invalid core email type');
       }
@@ -850,11 +699,10 @@ module.exports = ({ strapi }) => ({
 
       const emailsConfig = await pluginStore.get({ key: 'email' });
 
-    // Convert {{ }} back to <%= %> for Strapi
       emailsConfig[pluginStoreEmailKey] = {
         ...emailsConfig[pluginStoreEmailKey],
         options: {
-          ...(emailsConfig[pluginStoreEmailKey] ? emailsConfig[pluginStoreEmailKey].options : {}),
+        ...(emailsConfig[pluginStoreEmailKey]?.options || {}),
           message: data.message.replace(/{{/g, '<%').replace(/}}/g, '%>'),
           object: data.subject.replace(/{{/g, '<%').replace(/}}/g, '%>'),
         },
@@ -863,8 +711,7 @@ module.exports = ({ strapi }) => ({
 
       await pluginStore.set({ key: 'email', value: emailsConfig });
 
-      strapi.log.info(`[magic-mail] ✅ Core email template updated: ${pluginStoreEmailKey}`);
-
+      strapi.log.info(`[magic-mail] [SUCCESS] Core email template updated: ${pluginStoreEmailKey}`);
       return { message: 'Saved' };
   },
 });
