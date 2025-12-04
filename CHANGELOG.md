@@ -1,3 +1,10 @@
+## [2.0.3](https://github.com/Schero94/Magic-Mail/compare/v2.0.2...v2.0.3) (2025-12-04)
+
+
+### Bug Fixes
+
+* relation filtering for Strapi v5 Document Service API ([03818b4](https://github.com/Schero94/Magic-Mail/commit/03818b49347893c9c88def5b25a2c3a86a308c74))
+
 ## [2.0.2](https://github.com/Schero94/Magic-Mail/compare/v2.0.1...v2.0.2) (2025-11-23)
 
 
