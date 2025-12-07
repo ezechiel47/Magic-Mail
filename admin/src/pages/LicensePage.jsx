@@ -43,7 +43,7 @@ const Title = styled(Typography)`
 
 const Subtitle = styled(Typography)`
   font-size: 1.125rem;
-  color: #6B7280;
+  color: ${props => props.theme.colors.neutral600};
   line-height: 1.6;
   display: block;
 `;
@@ -54,24 +54,29 @@ const TierGrid = styled(Flex)`
   max-width: 1080px;
   justify-content: center;
   flex-wrap: wrap;
+  align-items: stretch;
 `;
 
 const TierWrapper = styled(Box)`
   flex: 1;
   min-width: 280px;
   max-width: 340px;
+  display: flex;
 `;
 
 const TierCard = styled(Box)`
-  background: white;
+  background: ${props => props.theme.colors.neutral0};
   border-radius: 16px;
   padding: 32px;
-  border: 2px solid ${props => props.$featured ? '#0EA5E9' : '#E5E7EB'};
+  border: 2px solid ${props => props.$featured ? '#0EA5E9' : props.theme.colors.neutral200};
   position: relative;
   transition: all 0.3s ease;
   box-shadow: ${props => props.$featured
     ? '0 20px 25px -5px rgba(14, 165, 233, 0.25), 0 8px 10px -6px rgba(14, 165, 233, 0.2)'
     : '0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.05)'};
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 
   &:hover {
     transform: translateY(-4px);
@@ -120,12 +125,13 @@ const TierPrice = styled(Typography)`
 `;
 
 const TierDescription = styled(Typography)`
-  color: #6B7280;
+  color: ${props => props.theme.colors.neutral600};
   margin-bottom: 24px;
 `;
 
 const FeatureList = styled(Box)`
   margin-bottom: 24px;
+  flex: 1;
 `;
 
 const Feature = styled(Flex)`
@@ -174,8 +180,8 @@ const CurrentPlanBadge = styled(Badge)`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #F3F4F6;
-  color: #6B7280;
+  background: ${props => props.theme.colors.neutral100};
+  color: ${props => props.theme.colors.neutral600};
   font-weight: 600;
   font-size: 15px;
 `;

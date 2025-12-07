@@ -122,12 +122,12 @@ const Container = styled.div`
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f6f6f9;
+  background: ${props => props.theme.colors.neutral100};
 `;
 
 const Header = styled.div`
   padding: 24px;
-  background: white;
+  background: ${props => props.theme.colors.neutral0};
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 `;
 
@@ -207,8 +207,8 @@ const TabsWrapper = styled.div`
 
 const TabListWrapper = styled.div`
   padding: 0 24px;
-  background: white;
-  border-bottom: 1px solid #eaeaef;
+  background: ${props => props.theme.colors.neutral0};
+  border-bottom: 1px solid ${props => props.theme.colors.neutral200};
 `;
 
 const StyledTabsRoot = styled(Tabs.Root)`
@@ -225,7 +225,7 @@ const StyledTabsContent = styled(Tabs.Content)`
 
 const TabContentWrapper = styled.div`
   height: calc(100vh - 240px);
-  background: white;
+  background: ${props => props.theme.colors.neutral0};
   position: relative;
 `;
 
@@ -304,10 +304,10 @@ const ImportExportButton = styled.span`
   gap: 6px;
   padding: 8px 16px;
   height: 36px;
-  background: white;
-  border: 1px solid #dcdce4;
+  background: ${props => props.theme.colors.neutral0};
+  border: 1px solid ${props => props.theme.colors.neutral200};
   border-radius: 4px;
-  color: #32324d;
+  color: ${props => props.theme.colors.neutral800};
   font-weight: 500;
   font-size: 13px;
   cursor: pointer;
@@ -315,9 +315,9 @@ const ImportExportButton = styled.span`
   white-space: nowrap;
 
   &:hover {
-    background: #f6f6f9;
-    border-color: #0EA5E9;
-    color: #0EA5E9;
+    background: ${props => props.theme.colors.neutral100};
+    border-color: ${props => props.theme.colors.primary600};
+    color: ${props => props.theme.colors.primary600};
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(14, 165, 233, 0.15);
   }
@@ -338,8 +338,8 @@ const ImportLabel = styled.label`
 `;
 
 const BackButton = styled.button`
-  background: white;
-  border: 1px solid #dcdce4;
+  background: ${props => props.theme.colors.neutral0};
+  border: 1px solid ${props => props.theme.colors.neutral200};
   border-radius: 4px;
   padding: 8px 10px;
   height: 36px;
@@ -350,8 +350,8 @@ const BackButton = styled.button`
   transition: all 200ms;
 
   &:hover {
-    background: #f6f6f9;
-    border-color: #c0c0cf;
+    background: ${props => props.theme.colors.neutral100};
+    border-color: ${props => props.theme.colors.neutral300};
     transform: translateY(-1px);
   }
 
@@ -366,8 +366,8 @@ const BackButton = styled.button`
 `;
 
 const VersionButton = styled.button`
-  background: white;
-  border: 1px solid #dcdce4;
+  background: ${props => props.theme.colors.neutral0};
+  border: 1px solid ${props => props.theme.colors.neutral200};
   border-radius: 4px;
   padding: 8px 16px;
   height: 36px;
@@ -379,13 +379,13 @@ const VersionButton = styled.button`
   transition: all 200ms;
   font-size: 13px;
   font-weight: 500;
-  color: #32324d;
+  color: ${props => props.theme.colors.neutral800};
   white-space: nowrap;
 
   &:hover {
-    background: #f6f6f9;
-    border-color: #0EA5E9;
-    color: #0EA5E9;
+    background: ${props => props.theme.colors.neutral100};
+    border-color: ${props => props.theme.colors.primary600};
+    color: ${props => props.theme.colors.primary600};
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(14, 165, 233, 0.15);
   }
@@ -407,7 +407,7 @@ const VersionModal = styled.div`
   right: ${props => props.$isOpen ? '0' : '-450px'};
   width: 450px;
   height: 100vh;
-  background: white;
+  background: ${props => props.theme.colors.neutral0};
   box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
   z-index: 9999;
   transition: right 300ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -430,7 +430,7 @@ const VersionModalOverlay = styled.div`
 
 const VersionModalHeader = styled.div`
   padding: 24px;
-  border-bottom: 1px solid #eaeaef;
+  border-bottom: 1px solid ${props => props.theme.colors.neutral200};
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -444,13 +444,13 @@ const VersionModalContent = styled.div`
 
 const VersionItem = styled.div`
   padding: 16px;
-  border: 1px solid #eaeaef;
+  border: 1px solid ${props => props.theme.colors.neutral200};
   border-radius: 8px;
   margin-bottom: 12px;
   transition: all 150ms;
   
   &:hover {
-    border-color: #0EA5E9;
+    border-color: ${props => props.theme.colors.primary600};
     box-shadow: 0 2px 8px rgba(14, 165, 233, 0.15);
   }
 `;
@@ -464,7 +464,7 @@ const VersionItemHeader = styled.div`
 
 const VersionNumber = styled.div`
   font-weight: 600;
-  color: #32324d;
+  color: ${props => props.theme.colors.neutral800};
   display: flex;
   align-items: center;
   gap: 8px;
@@ -481,12 +481,12 @@ const VersionBadge = styled.span`
 
 const VersionDate = styled.div`
   font-size: 13px;
-  color: #666687;
+  color: ${props => props.theme.colors.neutral600};
 `;
 
 const VersionMeta = styled.div`
   font-size: 13px;
-  color: #666687;
+  color: ${props => props.theme.colors.neutral600};
   margin-bottom: 12px;
 `;
 
@@ -543,12 +543,12 @@ const CloseButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #666687;
+  color: ${props => props.theme.colors.neutral600};
   transition: all 150ms;
   
   &:hover {
-    color: #32324d;
-    background: #f6f6f9;
+    color: ${props => props.theme.colors.neutral800};
+    background: ${props => props.theme.colors.neutral100};
     border-radius: 4px;
   }
   
@@ -561,7 +561,7 @@ const CloseButton = styled.button`
 const EmptyVersions = styled.div`
   text-align: center;
   padding: 60px 20px;
-  color: #666687;
+  color: ${props => props.theme.colors.neutral600};
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -571,7 +571,7 @@ const EmptyVersions = styled.div`
     width: 64px;
     height: 64px;
     margin-bottom: 16px;
-    color: #dcdce4;
+    color: ${props => props.theme.colors.neutral300};
   }
 `;
 

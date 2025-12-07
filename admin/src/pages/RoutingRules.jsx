@@ -199,7 +199,7 @@ const HeaderContent = styled(Flex)`
 `;
 
 const Title = styled(Typography)`
-  color: ${theme.colors.neutral[0]};
+  color: white;
   font-size: 2rem;
   font-weight: 700;
   letter-spacing: -0.025em;
@@ -254,7 +254,7 @@ const StatsGrid = styled.div`
 `;
 
 const StatCard = styled(Box)`
-  background: ${theme.colors.neutral[0]};
+  background: ${props => props.theme.colors.neutral0};
   border-radius: ${theme.borderRadius.lg};
   padding: 28px ${theme.spacing.lg};
   position: relative;
@@ -263,7 +263,7 @@ const StatCard = styled(Box)`
   ${css`animation: ${fadeIn} ${theme.transitions.slow} backwards;`}
   animation-delay: ${props => props.$delay || '0s'};
   box-shadow: ${theme.shadows.sm};
-  border: 1px solid ${theme.colors.neutral[200]};
+  border: 1px solid ${props => props.theme.colors.neutral200};
   min-width: 200px;
   flex: 1;
   text-align: center;
@@ -330,7 +330,7 @@ const StatIcon = styled(Box)`
 const StatValue = styled(Typography)`
   font-size: 2.75rem;
   font-weight: 700;
-  color: ${theme.colors.neutral[800]};
+  color: ${props => props.theme.colors.neutral800};
   line-height: 1;
   margin-bottom: 10px;
   transition: all ${theme.transitions.normal};
@@ -344,7 +344,7 @@ const StatValue = styled(Typography)`
 
 const StatLabel = styled(Typography)`
   font-size: 0.95rem;
-  color: ${theme.colors.neutral[600]};
+  color: ${props => props.theme.colors.neutral600};
   font-weight: 500;
   letter-spacing: 0.025em;
   text-align: center;
@@ -359,9 +359,9 @@ const RulesContainer = styled(Box)`
 `;
 
 const EmptyState = styled(Box)`
-  background: ${theme.colors.neutral[0]};
+  background: ${props => props.theme.colors.neutral0};
   border-radius: ${theme.borderRadius.xl};
-  border: 2px dashed ${theme.colors.neutral[200]};
+  border: 2px dashed ${props => props.theme.colors.neutral300};
   padding: 80px 32px;
   text-align: center;
   position: relative;
@@ -389,7 +389,7 @@ const OnlineBadge = styled.div`
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: ${props => props.$active ? theme.colors.success[500] : theme.colors.neutral[400]};
+  background: ${props => props.$active ? theme.colors.success[500] : props.theme.colors.neutral400};
   display: inline-block;
   margin-right: 8px;
   ${css`animation: ${props => props.$active ? pulse : 'none'} 2s ease-in-out infinite;`}
@@ -397,12 +397,12 @@ const OnlineBadge = styled.div`
 
 const StyledTable = styled(Table)`
   thead {
-    background: ${theme.colors.neutral[50]};
-    border-bottom: 2px solid ${theme.colors.neutral[200]};
+    background: ${props => props.theme.colors.neutral100};
+    border-bottom: 2px solid ${props => props.theme.colors.neutral200};
     
     th {
       font-weight: 600;
-      color: ${theme.colors.neutral[700]};
+      color: ${props => props.theme.colors.neutral800};
       font-size: 0.875rem;
       text-transform: uppercase;
       letter-spacing: 0.025em;
@@ -412,31 +412,31 @@ const StyledTable = styled(Table)`
   
   tbody tr {
     transition: all ${theme.transitions.fast};
-    border-bottom: 1px solid ${theme.colors.neutral[100]};
+    border-bottom: 1px solid ${props => props.theme.colors.neutral150};
     
     &:last-child {
       border-bottom: none;
     }
     
     &:hover {
-      background: ${theme.colors.neutral[50]};
+      background: ${props => props.theme.colors.primary100};
     }
     
     td {
       padding: ${theme.spacing.lg} ${theme.spacing.lg};
-      color: ${theme.colors.neutral[700]};
+      color: ${props => props.theme.colors.neutral800};
       vertical-align: middle;
     }
   }
 `;
 
 const FilterBar = styled(Flex)`
-  background: ${theme.colors.neutral[0]};
+  background: ${props => props.theme.colors.neutral0};
   padding: ${theme.spacing.md} ${theme.spacing.lg};
   border-radius: ${theme.borderRadius.lg};
   margin-bottom: ${theme.spacing.lg};
   box-shadow: ${theme.shadows.sm};
-  border: 1px solid ${theme.colors.neutral[200]};
+  border: 1px solid ${props => props.theme.colors.neutral200};
   gap: ${theme.spacing.md};
   align-items: center;
 `;
@@ -453,14 +453,14 @@ const SearchIcon = styled(MagnifyingGlassIcon)`
   left: 12px;
   width: 16px;
   height: 16px;
-  color: ${theme.colors.neutral[600]};
+  color: ${props => props.theme.colors.neutral600};
   pointer-events: none;
 `;
 
 const StyledSearchInput = styled.input`
   width: 100%;
   padding: 10px 12px 10px 40px;
-  border: 1px solid ${theme.colors.neutral[200]};
+  border: 1px solid ${props => props.theme.colors.neutral200};
   border-radius: ${theme.borderRadius.md};
   font-size: 0.875rem;
   transition: all ${theme.transitions.fast};
@@ -472,7 +472,7 @@ const StyledSearchInput = styled.input`
   }
   
   &::placeholder {
-    color: ${theme.colors.neutral[600]};
+    color: ${props => props.theme.colors.neutral500};
   }
 `;
 
@@ -636,10 +636,10 @@ const RoutingRulesPage = () => {
             
             <Typography 
               variant="alpha" 
+              textColor="neutral800"
               style={{ 
                 fontSize: '1.75rem',
                 fontWeight: '700',
-                color: theme.colors.neutral[800],
                 marginBottom: '8px',
               }}
             >
@@ -671,7 +671,7 @@ const RoutingRulesPage = () => {
         <RulesContainer>
           <Box style={{ marginBottom: theme.spacing.md }}>
             <Flex justifyContent="space-between" alignItems="center" marginBottom={4}>
-              <Typography variant="delta" style={{ fontSize: '1.5rem', fontWeight: 600, color: theme.colors.neutral[700] }}>
+              <Typography variant="delta" textColor="neutral700" style={{ fontSize: '1.5rem', fontWeight: 600 }}>
                 🎯 Routing Rules
               </Typography>
               <Button startIcon={<PlusIcon style={{ width: 16, height: 16 }} />} onClick={() => setShowModal(true)}>

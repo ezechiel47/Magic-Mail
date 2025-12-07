@@ -1,6 +1,6 @@
 # 📧 MagicMail - Email Business Suite for Strapi v5
 
-> **Enterprise-grade multi-account email management with smart routing, OAuth 2.0 support, and complete security compliance**
+> **Professional-grade multi-account email management with smart routing, OAuth 2.0 support, and complete security compliance**
 
 [![NPM Version](https://img.shields.io/npm/v/strapi-plugin-magic-mail.svg)](https://www.npmjs.com/package/strapi-plugin-magic-mail)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -10,7 +10,7 @@
 
 ## 🌟 Why MagicMail?
 
-**Stop fighting with .env files and email configuration!** MagicMail brings enterprise email management to Strapi v5 with:
+**Stop fighting with .env files and email configuration!** MagicMail brings professional email management to Strapi v5 with:
 
 - ✅ **6 Email Providers** - Gmail, Microsoft 365, Yahoo, SMTP, SendGrid, Mailgun
 - ✅ **OAuth 2.0 Authentication** - No passwords needed for Gmail, Microsoft, Yahoo
@@ -20,7 +20,7 @@
 - ✅ **Zero Configuration** - No .env files, everything in the database
 - ✅ **Email Designer Compatible** - Works seamlessly with strapi-plugin-email-designer-5
 - ✅ **GDPR/CAN-SPAM Compliant** - Built-in List-Unsubscribe headers
-- ✅ **Enterprise Security** - TLS 1.2+, DKIM, SPF, DMARC validation
+- ✅ **Professional Security** - TLS 1.2+, DKIM, SPF, DMARC validation
 
 ---
 
@@ -228,17 +228,15 @@ await strapi.plugin('magic-mail').service('email-router').send({
 
 ### ✨ Features
 
-| Feature | FREE | PREMIUM | ADVANCED | ENTERPRISE |
-|---------|------|---------|----------|------------|
-| **Visual Designer** | ✅ Basic builder | ✅ + template library | ✅ Pro components | ✅ Enterprise suite |
-| **Templates Included** | 25 | 100 | 500 | Unlimited |
-| **Drag & Drop + Mustache** | ✅ | ✅ | ✅ | ✅ |
-| **Import / Export** | ✅ | ✅ | ✅ | ✅ |
-| **Template Versioning** | ❌ | ✅ | ✅ | ✅ |
-| **Analytics** | ❌ | Basic insights | Advanced dashboard | Enterprise analytics |
-| **Custom Blocks** | ❌ | ❌ | ❌ | ✅ |
-| **Team Library** | ❌ | ❌ | ❌ | ✅ |
-| **A/B Testing** | ❌ | ❌ | ❌ | ✅ |
+| Feature | FREE | PREMIUM | ADVANCED |
+|---------|------|---------|----------|
+| **Visual Designer** | ✅ Basic builder | ✅ + template library | ✅ Pro components |
+| **Templates Included** | 25 | 100 | 500 |
+| **Drag & Drop + Mustache** | ✅ | ✅ | ✅ |
+| **Import / Export** | ✅ | ✅ | ✅ |
+| **Template Versioning** | ❌ | ✅ | ✅ |
+| **Analytics** | ❌ | Basic insights | Advanced dashboard |
+| **A/B Testing** | ❌ | ❌ | ✅ |
 
 ### 📧 Creating Email Templates
 
@@ -1399,7 +1397,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 - [styled-components](https://styled-components.com) - CSS-in-JS
 
 **Inspired by:**
-- Enterprise email requirements
+- Professional email requirements
 - Multi-tenant application needs
 - Developer experience first
 
@@ -1424,6 +1422,6 @@ If MagicMail helps your project, please:
 
 ---
 
-**Made with ❤️ for the Strapi Community**
+**Made for the Strapi Community**
 
-**MagicMail - Because email management should be magical, not painful.** ✨
+**MagicMail - Because email management should be magical, not painful.**

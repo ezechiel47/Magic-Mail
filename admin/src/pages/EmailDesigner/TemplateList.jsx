@@ -99,12 +99,12 @@ const ScrollableDialogBody = styled(Box)`
   }
 
   &::-webkit-scrollbar-thumb {
-    background: ${theme.colors.neutral[200]};
+    background: ${props => props.theme.colors.neutral200};
     border-radius: 3px;
   }
-
+  
   &::-webkit-scrollbar-thumb:hover {
-    background: ${theme.colors.neutral[300]};
+    background: ${props => props.theme.colors.neutral300};
   }
 `;
 
@@ -125,7 +125,7 @@ const CodeHeader = styled(Flex)`
 const CodeLabel = styled(Typography)`
   font-size: 15px;
   font-weight: 600;
-  color: ${theme.colors.neutral[800]};
+  color: ${props => props.theme.colors.neutral800};
   display: flex;
   align-items: center;
   gap: 8px;
@@ -337,7 +337,7 @@ const HeaderContent = styled(Flex)`
 `;
 
 const Title = styled(Typography)`
-  color: ${theme.colors.neutral[0]};
+  color: white;
   font-size: 2rem;
   font-weight: 700;
   letter-spacing: -0.025em;
@@ -392,7 +392,7 @@ const StatsGrid = styled.div`
 `;
 
 const StatCard = styled(Box)`
-  background: ${theme.colors.neutral[0]};
+  background: ${props => props.theme.colors.neutral0};
   border-radius: ${theme.borderRadius.lg};
   padding: 28px ${theme.spacing.lg};
   position: relative;
@@ -401,7 +401,7 @@ const StatCard = styled(Box)`
   ${css`animation: ${fadeIn} ${theme.transitions.slow} backwards;`}
   animation-delay: ${props => props.$delay || '0s'};
   box-shadow: ${theme.shadows.sm};
-  border: 1px solid ${theme.colors.neutral[200]};
+  border: 1px solid ${props => props.theme.colors.neutral200};
   min-width: 200px;
   flex: 1;
   text-align: center;
@@ -468,7 +468,7 @@ const StatIcon = styled(Box)`
 const StatValue = styled(Typography)`
   font-size: 2.75rem;
   font-weight: 700;
-  color: ${theme.colors.neutral[800]};
+  color: ${props => props.theme.colors.neutral800};
   line-height: 1;
   margin-bottom: 10px;
   transition: all ${theme.transitions.normal};
@@ -482,7 +482,7 @@ const StatValue = styled(Typography)`
 
 const StatLabel = styled(Typography)`
   font-size: 0.95rem;
-  color: ${theme.colors.neutral[600]};
+  color: ${props => props.theme.colors.neutral600};
   font-weight: 500;
   letter-spacing: 0.025em;
   text-align: center;
@@ -501,12 +501,12 @@ const SectionHeader = styled(Box)`
 `;
 
 const FilterBar = styled(Flex)`
-  background: ${theme.colors.neutral[0]};
+  background: ${props => props.theme.colors.neutral0};
   padding: ${theme.spacing.md} ${theme.spacing.lg};
   border-radius: ${theme.borderRadius.lg};
   margin-bottom: ${theme.spacing.lg};
   box-shadow: ${theme.shadows.sm};
-  border: 1px solid ${theme.colors.neutral[200]};
+  border: 1px solid ${props => props.theme.colors.neutral200};
   gap: ${theme.spacing.md};
   align-items: center;
 `;
@@ -523,7 +523,7 @@ const SearchIcon = styled(MagnifyingGlassIcon)`
   left: 12px;
   width: 16px;
   height: 16px;
-  color: ${theme.colors.neutral[600]};
+  color: ${props => props.theme.colors.neutral600};
   pointer-events: none;
   z-index: 1;
 `;
@@ -536,12 +536,12 @@ const StyledSearchInput = styled(TextInput)`
 const StyledTable = styled(Table)`
   width: 100%;
   thead {
-    background: ${theme.colors.neutral[50]};
-    border-bottom: 2px solid ${theme.colors.neutral[200]};
+    background: ${props => props.theme.colors.neutral100};
+    border-bottom: 2px solid ${props => props.theme.colors.neutral200};
     
     th {
       font-weight: 600;
-      color: ${theme.colors.neutral[700]};
+      color: ${props => props.theme.colors.neutral800};
       font-size: 0.875rem;
       text-transform: uppercase;
       letter-spacing: 0.025em;
@@ -551,28 +551,28 @@ const StyledTable = styled(Table)`
   
   tbody tr {
     transition: all ${theme.transitions.fast};
-    border-bottom: 1px solid ${theme.colors.neutral[100]};
+    border-bottom: 1px solid ${props => props.theme.colors.neutral150};
     
     &:last-child {
       border-bottom: none;
     }
     
     &:hover {
-      background: ${theme.colors.neutral[50]};
+      background: ${props => props.theme.colors.primary100};
     }
     
     td {
       padding: ${theme.spacing.lg} ${theme.spacing.lg};
-      color: ${theme.colors.neutral[700]};
+      color: ${props => props.theme.colors.neutral800};
       vertical-align: middle;
     }
   }
 `;
 
 const EmptyState = styled(Box)`
-  background: ${theme.colors.neutral[0]};
+  background: ${props => props.theme.colors.neutral0};
   border-radius: ${theme.borderRadius.xl};
-  border: 2px dashed ${theme.colors.neutral[200]};
+  border: 2px dashed ${props => props.theme.colors.neutral300};
   padding: 80px 32px;
   text-align: center;
   position: relative;
@@ -639,7 +639,7 @@ const EmptyFeatureItem = styled.div`
   text-align: center;
   gap: ${theme.spacing.sm};
   padding: ${theme.spacing.lg};
-  background: ${theme.colors.neutral[0]};
+  background: ${props => props.theme.colors.neutral0};
   border-radius: ${theme.borderRadius.md};
   box-shadow: ${theme.shadows.sm};
   transition: ${theme.transitions.fast};
@@ -1121,12 +1121,12 @@ const TemplateList = () => {
           <Flex alignItems="center" gap={3}>
             <SparklesIcon style={{ width: 24, height: 24, color: theme.colors.warning[600] }} />
             <Box>
-              <Typography variant="omega" fontWeight="bold" style={{ color: theme.colors.neutral[800] }}>
+              <Typography variant="omega" fontWeight="bold" textColor="neutral800">
                 {limits.emailTemplates.current >= limits.emailTemplates.max 
                   ? `You've reached your ${getTierInfo().name} limit!`
                   : `You're approaching your ${getTierInfo().name} limit!`}
               </Typography>
-              <Typography variant="pi" style={{ color: theme.colors.neutral[600], marginTop: '4px' }}>
+              <Typography variant="pi" textColor="neutral600" style={{ marginTop: '4px' }}>
                 Using {limits.emailTemplates.current} of {limits.emailTemplates.max} templates. 
                 {getTierInfo().next && ` Upgrade to ${getTierInfo().next} for ${getTierInfo().nextTemplates === -1 ? 'unlimited' : getTierInfo().nextTemplates} templates!`}
               </Typography>
@@ -1159,10 +1159,10 @@ const TemplateList = () => {
             
             <Typography 
               variant="alpha" 
+              textColor="neutral800"
               style={{ 
                 fontSize: '1.75rem',
                 fontWeight: '700',
-                color: theme.colors.neutral[800],
                 textAlign: 'center',
                 display: 'block',
               }}
@@ -1244,7 +1244,7 @@ const TemplateList = () => {
         <TemplatesContainer>
           <SectionHeader>
             <Flex justifyContent="space-between" alignItems="center" marginBottom={4}>
-              <Typography variant="delta" style={{ fontSize: '1.5rem', fontWeight: 600, color: theme.colors.neutral[700] }}>
+              <Typography variant="delta" textColor="neutral700" style={{ fontSize: '1.5rem', fontWeight: 600 }}>
                 Email Templates
               </Typography>
               <Button 
@@ -1420,16 +1420,16 @@ const TemplateList = () => {
         </Box>
       ) : (
         <Box
+          background="neutral100"
           style={{
             padding: '80px 32px',
             textAlign: 'center',
-            background: theme.colors.neutral[50],
             borderRadius: theme.borderRadius.lg,
-            border: `1px dashed ${theme.colors.neutral[200]}`,
+            border: '1px dashed #D1D5DB',
           }}
         >
-          <MagnifyingGlassIcon style={{ width: '64px', height: '64px', margin: '0 auto 16px', color: theme.colors.neutral[400] }} />
-          <Typography variant="beta" style={{ marginBottom: '8px', color: theme.colors.neutral[700] }}>
+          <MagnifyingGlassIcon style={{ width: '64px', height: '64px', margin: '0 auto 16px', color: '#9CA3AF' }} />
+          <Typography variant="beta" textColor="neutral700" style={{ marginBottom: '8px' }}>
             No templates found
           </Typography>
           <Typography variant="omega" textColor="neutral600">
@@ -1455,7 +1455,7 @@ const TemplateList = () => {
         <Tabs.Content value="coreEmails">
           <Box style={{ marginTop: '24px' }}>
             <Flex direction="column" gap={2} style={{ marginBottom: '24px' }}>
-              <Typography variant="delta" style={{ fontSize: '1.5rem', fontWeight: 600, color: theme.colors.neutral[700] }}>
+              <Typography variant="delta" textColor="neutral700" style={{ fontSize: '1.5rem', fontWeight: 600 }}>
                 Core Email Templates
               </Typography>
               <Typography variant="omega" textColor="neutral600">
@@ -1463,7 +1463,7 @@ const TemplateList = () => {
               </Typography>
             </Flex>
 
-            <Box background="neutral0" borderRadius={theme.borderRadius.lg} shadow="md" style={{ border: `1px solid ${theme.colors.neutral[200]}`, overflow: 'hidden' }}>
+            <Box background="neutral0" borderRadius={theme.borderRadius.lg} shadow="md" style={{ border: '1px solid #E5E7EB', overflow: 'hidden' }}>
               <Table colCount={2} rowCount={2}>
                 <Thead>
                   <Tr>
@@ -1523,10 +1523,10 @@ const TemplateList = () => {
             display: 'flex',
             flexDirection: 'column'
           }}>
-            <Modal.Header style={{ borderBottom: `1px solid ${theme.colors.neutral[200]}`, paddingBottom: '16px' }}>
+            <Modal.Header style={{ borderBottom: '1px solid #E5E7EB', paddingBottom: '16px' }}>
               <Flex alignItems="center" gap={2}>
                 <BoltIcon style={{ width: 24, height: 24, color: theme.colors.primary[600] }} />
-                <Typography variant="beta" style={{ color: theme.colors.neutral[800] }}>
+                <Typography variant="beta" textColor="neutral800">
                   Send Template: {selectedTemplate.name}
                 </Typography>
               </Flex>
@@ -1541,7 +1541,7 @@ const TemplateList = () => {
                   </CodeLabel>
                   <RecommendedBadge>Empfohlen</RecommendedBadge>
                 </CodeHeader>
-                <Typography variant="pi" style={{ color: theme.colors.neutral[600], marginBottom: '16px' }}>
+                <Typography variant="pi" textColor="neutral600" style={{ marginBottom: '16px' }}>
                   Nutze die standard Strapi Email-Funktion. MagicMail fängt sie automatisch ab und wendet alle Features an.
                 </Typography>
                 <CodeBlockWrapper>
@@ -1596,7 +1596,7 @@ const TemplateList = () => {
                     MagicMail Plugin Service
                   </CodeLabel>
                 </CodeHeader>
-                <Typography variant="pi" style={{ color: theme.colors.neutral[600], marginBottom: '16px' }}>
+                <Typography variant="pi" textColor="neutral600" style={{ marginBottom: '16px' }}>
                   Direkter Zugriff auf den MagicMail Service für erweiterte Optionen.
                 </Typography>
                 <CodeBlockWrapper>
@@ -1647,7 +1647,7 @@ const TemplateList = () => {
                     REST API
                   </CodeLabel>
                 </CodeHeader>
-                <Typography variant="pi" style={{ color: theme.colors.neutral[600], marginBottom: '16px' }}>
+                <Typography variant="pi" textColor="neutral600" style={{ marginBottom: '16px' }}>
                   Für externe Anwendungen, Frontend-Calls oder Postman Tests.
                 </Typography>
                 <CodeBlockWrapper>

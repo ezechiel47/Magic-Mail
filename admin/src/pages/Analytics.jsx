@@ -130,7 +130,7 @@ const HeaderContent = styled(Flex)`
 `;
 
 const Title = styled(Typography)`
-  color: ${theme.colors.neutral[0]};
+  color: white;
   font-size: 2rem;
   font-weight: 700;
   letter-spacing: -0.025em;
@@ -185,7 +185,7 @@ const StatsGrid = styled.div`
 `;
 
 const StatCard = styled(Box)`
-  background: ${theme.colors.neutral[0]};
+  background: ${props => props.theme.colors.neutral0};
   border-radius: ${theme.borderRadius.lg};
   padding: 28px ${theme.spacing.lg};
   position: relative;
@@ -194,7 +194,7 @@ const StatCard = styled(Box)`
   ${css`animation: ${fadeIn} ${theme.transitions.slow} backwards;`}
   animation-delay: ${props => props.$delay || '0s'};
   box-shadow: ${theme.shadows.sm};
-  border: 1px solid ${theme.colors.neutral[200]};
+  border: 1px solid ${props => props.theme.colors.neutral200};
   min-width: 200px;
   flex: 1;
   text-align: center;
@@ -260,7 +260,7 @@ const StatIcon = styled(Box)`
 const StatValue = styled(Typography)`
   font-size: 2.25rem;
   font-weight: 700;
-  color: ${theme.colors.neutral[800]};
+  color: ${props => props.theme.colors.neutral800};
   transition: all ${theme.transitions.normal};
   line-height: 1;
   margin-bottom: ${theme.spacing.xs};
@@ -272,7 +272,7 @@ const StatValue = styled(Typography)`
 
 const StatLabel = styled(Typography)`
   font-size: 0.875rem;
-  color: ${theme.colors.neutral[600]};
+  color: ${props => props.theme.colors.neutral600};
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -283,22 +283,22 @@ const StatLabel = styled(Typography)`
 `;
 
 const FilterBar = styled(Box)`
-  background: ${theme.colors.neutral[0]};
+  background: ${props => props.theme.colors.neutral0};
   border-radius: ${theme.borderRadius.lg};
   padding: ${theme.spacing.lg} ${theme.spacing.xl};
   margin-bottom: ${theme.spacing.lg};
   box-shadow: ${theme.shadows.sm};
-  border: 1px solid ${theme.colors.neutral[200]};
+  border: 1px solid ${props => props.theme.colors.neutral200};
 `;
 
 const StyledTable = styled(Table)`
   thead {
-    background: ${theme.colors.neutral[50]};
-    border-bottom: 2px solid ${theme.colors.neutral[200]};
+    background: ${props => props.theme.colors.neutral100};
+    border-bottom: 2px solid ${props => props.theme.colors.neutral200};
     
     th {
       font-weight: 600;
-      color: ${theme.colors.neutral[700]};
+      color: ${props => props.theme.colors.neutral800};
       font-size: 0.875rem;
       text-transform: uppercase;
       letter-spacing: 0.025em;
@@ -308,37 +308,37 @@ const StyledTable = styled(Table)`
   
   tbody tr {
     transition: all ${theme.transitions.fast};
-    border-bottom: 1px solid ${theme.colors.neutral[100]};
+    border-bottom: 1px solid ${props => props.theme.colors.neutral150};
     
     &:last-child {
       border-bottom: none;
     }
     
     &:hover {
-      background: ${theme.colors.neutral[50]};
+      background: ${props => props.theme.colors.primary100};
     }
     
     td {
       padding: ${theme.spacing.lg} ${theme.spacing.lg};
-      color: ${theme.colors.neutral[700]};
+      color: ${props => props.theme.colors.neutral800};
       vertical-align: middle;
     }
   }
 `;
 
 const TableContainer = styled(Box)`
-  background: ${theme.colors.neutral[0]};
+  background: ${props => props.theme.colors.neutral0};
   border-radius: ${theme.borderRadius.lg};
   box-shadow: ${theme.shadows.md};
-  border: 1px solid ${theme.colors.neutral[200]};
+  border: 1px solid ${props => props.theme.colors.neutral200};
   overflow: hidden;
   margin-bottom: ${theme.spacing.xl};
 `;
 
 const EmptyState = styled(Box)`
-  background: ${theme.colors.neutral[0]};
+  background: ${props => props.theme.colors.neutral0};
   border-radius: ${theme.borderRadius.xl};
-  border: 2px dashed ${theme.colors.neutral[200]};
+  border: 2px dashed ${props => props.theme.colors.neutral300};
   padding: 80px 32px;
   text-align: center;
   position: relative;
@@ -684,7 +684,7 @@ const Analytics = () => {
                         </Flex>
                       ) : (
                         <Flex alignItems="center" gap={1}>
-                          <XCircleIcon style={{ width: 16, height: 16, color: theme.colors.neutral[400] }} />
+                          <XCircleIcon style={{ width: 16, height: 16, color: '#9CA3AF' }} />
                           <Typography variant="pi" textColor="neutral600">
                             No
                           </Typography>
@@ -701,7 +701,7 @@ const Analytics = () => {
                         </Flex>
                       ) : (
                         <Flex alignItems="center" gap={1}>
-                          <XCircleIcon style={{ width: 16, height: 16, color: theme.colors.neutral[400] }} />
+                          <XCircleIcon style={{ width: 16, height: 16, color: '#9CA3AF' }} />
                           <Typography variant="pi" textColor="neutral600">
                             No
                           </Typography>

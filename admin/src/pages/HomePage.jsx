@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useFetchClient, useNotification } from '@strapi/strapi/admin';
 import { useAuthRefresh } from '../hooks/useAuthRefresh';
 import styled, { keyframes, css } from 'styled-components';
+import { theme } from '../utils/theme';
 import {
   Box,
   Button,
@@ -28,72 +29,6 @@ import {
   PencilIcon,
 } from '@heroicons/react/24/outline';
 import AddAccountModal from '../components/AddAccountModal';
-
-// ================ THEME (Exact copy from magic-sessionmanager) ================
-const theme = {
-  colors: {
-    primary: {
-      50: '#F0F9FF',
-      100: '#E0F2FE',
-      500: '#0EA5E9',
-      600: '#0284C7',
-      700: '#0369A1',
-    },
-    secondary: {
-      500: '#A855F7',
-      600: '#9333EA',
-    },
-    success: {
-      100: '#DCFCE7',
-      500: '#22C55E',
-      600: '#16A34A',
-      700: '#15803D',
-    },
-    warning: {
-      100: '#FEF3C7',
-      500: '#F59E0B',
-      600: '#D97706',
-    },
-    danger: {
-      100: '#FEE2E2',
-      500: '#EF4444',
-      600: '#DC2626',
-    },
-    neutral: {
-      0: '#FFFFFF',
-      50: '#F9FAFB',
-      100: '#F3F4F6',
-      200: '#E5E7EB',
-      600: '#4B5563',
-      700: '#374151',
-      800: '#1F2937',
-    }
-  },
-  shadows: {
-    sm: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
-    md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
-    lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
-    xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-  },
-  transitions: {
-    fast: '150ms cubic-bezier(0.4, 0, 0.2, 1)',
-    normal: '300ms cubic-bezier(0.4, 0, 0.2, 1)',
-    slow: '500ms cubic-bezier(0.4, 0, 0.2, 1)',
-  },
-  spacing: {
-    xs: '4px',
-    sm: '8px',
-    md: '16px',
-    lg: '24px',
-    xl: '32px',
-    '2xl': '48px',
-  },
-  borderRadius: {
-    md: '8px',
-    lg: '12px',
-    xl: '16px',
-  }
-};
 
 // ================ ANIMATIONS ================
 const fadeIn = keyframes`
@@ -196,7 +131,7 @@ const HeaderContent = styled(Flex)`
 `;
 
 const Title = styled(Typography)`
-  color: ${theme.colors.neutral[0]};
+  color: white;
   font-size: 2rem;
   font-weight: 700;
   letter-spacing: -0.025em;
@@ -251,7 +186,7 @@ const StatsGrid = styled.div`
 `;
 
 const StatCard = styled(Box)`
-  background: ${theme.colors.neutral[0]};
+  background: ${props => props.theme.colors.neutral0};
   border-radius: ${theme.borderRadius.lg};
   padding: 28px ${theme.spacing.lg};
   position: relative;
@@ -260,7 +195,7 @@ const StatCard = styled(Box)`
   ${css`animation: ${fadeIn} ${theme.transitions.slow} backwards;`}
   animation-delay: ${props => props.$delay || '0s'};
   box-shadow: ${theme.shadows.sm};
-  border: 1px solid ${theme.colors.neutral[200]};
+  border: 1px solid ${props => props.theme.colors.neutral200};
   min-width: 200px;
   flex: 1;
   text-align: center;
@@ -327,7 +262,7 @@ const StatIcon = styled(Box)`
 const StatValue = styled(Typography)`
   font-size: 2.75rem;
   font-weight: 700;
-  color: ${theme.colors.neutral[800]};
+  color: ${props => props.theme.colors.neutral800};
   line-height: 1;
   margin-bottom: 10px;
   transition: all ${theme.transitions.normal};
@@ -341,7 +276,7 @@ const StatValue = styled(Typography)`
 
 const StatLabel = styled(Typography)`
   font-size: 0.95rem;
-  color: ${theme.colors.neutral[600]};
+  color: ${props => props.theme.colors.neutral600};
   font-weight: 500;
   letter-spacing: 0.025em;
   text-align: center;
@@ -356,9 +291,9 @@ const AccountsContainer = styled(Box)`
 `;
 
 const EmptyState = styled(Box)`
-  background: ${theme.colors.neutral[0]};
+  background: ${props => props.theme.colors.neutral0};
   border-radius: ${theme.borderRadius.xl};
-  border: 2px dashed ${theme.colors.neutral[200]};
+  border: 2px dashed ${props => props.theme.colors.neutral300};
   padding: 80px 32px;
   text-align: center;
   position: relative;
@@ -386,7 +321,7 @@ const OnlineBadge = styled.div`
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: ${props => props.$active ? theme.colors.success[500] : theme.colors.neutral[400]};
+  background: ${props => props.$active ? theme.colors.success[500] : props.theme.colors.neutral400};
   display: inline-block;
   margin-right: 8px;
   ${css`animation: ${props => props.$active ? pulse : 'none'} 2s ease-in-out infinite;`}
@@ -394,12 +329,12 @@ const OnlineBadge = styled.div`
 
 const StyledTable = styled(Table)`
   thead {
-    background: ${theme.colors.neutral[50]};
-    border-bottom: 2px solid ${theme.colors.neutral[200]};
+    background: ${props => props.theme.colors.neutral100};
+    border-bottom: 2px solid ${props => props.theme.colors.neutral200};
     
     th {
       font-weight: 600;
-      color: ${theme.colors.neutral[700]};
+      color: ${props => props.theme.colors.neutral800};
       font-size: 0.875rem;
       text-transform: uppercase;
       letter-spacing: 0.025em;
@@ -409,31 +344,31 @@ const StyledTable = styled(Table)`
   
   tbody tr {
     transition: all ${theme.transitions.fast};
-    border-bottom: 1px solid ${theme.colors.neutral[100]};
+    border-bottom: 1px solid ${props => props.theme.colors.neutral150};
     
     &:last-child {
       border-bottom: none;
     }
     
     &:hover {
-      background: ${theme.colors.neutral[50]};
+      background: ${props => props.theme.colors.primary100};
     }
     
     td {
       padding: ${theme.spacing.lg} ${theme.spacing.lg};
-      color: ${theme.colors.neutral[700]};
+      color: ${props => props.theme.colors.neutral800};
       vertical-align: middle;
     }
   }
 `;
 
 const FilterBar = styled(Flex)`
-  background: ${theme.colors.neutral[0]};
+  background: ${props => props.theme.colors.neutral0};
   padding: ${theme.spacing.md} ${theme.spacing.lg};
   border-radius: ${theme.borderRadius.lg};
   margin-bottom: ${theme.spacing.lg};
   box-shadow: ${theme.shadows.sm};
-  border: 1px solid ${theme.colors.neutral[200]};
+  border: 1px solid ${props => props.theme.colors.neutral200};
   gap: ${theme.spacing.md};
   align-items: center;
 `;
@@ -450,17 +385,19 @@ const SearchIcon = styled(MagnifyingGlassIcon)`
   left: 12px;
   width: 16px;
   height: 16px;
-  color: ${theme.colors.neutral[600]};
+  color: ${props => props.theme.colors.neutral600};
   pointer-events: none;
 `;
 
 const StyledSearchInput = styled.input`
   width: 100%;
   padding: 10px 12px 10px 40px;
-  border: 1px solid ${theme.colors.neutral[200]};
+  border: 1px solid ${props => props.theme.colors.neutral200};
   border-radius: ${theme.borderRadius.md};
   font-size: 0.875rem;
   transition: all ${theme.transitions.fast};
+  background: ${props => props.theme.colors.neutral0};
+  color: ${props => props.theme.colors.neutral800};
   
   &:focus {
     outline: none;
@@ -469,7 +406,7 @@ const StyledSearchInput = styled.input`
   }
   
   &::placeholder {
-    color: ${theme.colors.neutral[600]};
+    color: ${props => props.theme.colors.neutral500};
   }
 `;
 
@@ -654,10 +591,10 @@ const HomePage = () => {
             
             <Typography 
               variant="alpha" 
+              textColor="neutral800"
               style={{ 
                 fontSize: '1.75rem',
                 fontWeight: '700',
-                color: theme.colors.neutral[800],
                 marginBottom: '8px',
               }}
             >
@@ -689,7 +626,7 @@ const HomePage = () => {
         <AccountsContainer>
           <Box style={{ marginBottom: theme.spacing.md }}>
             <Flex justifyContent="space-between" alignItems="center" marginBottom={4}>
-              <Typography variant="delta" style={{ fontSize: '1.5rem', fontWeight: 600, color: theme.colors.neutral[700] }}>
+              <Typography variant="delta" textColor="neutral700" style={{ fontSize: '1.5rem', fontWeight: 600 }}>
                 📧 Email Accounts
               </Typography>
               <Button startIcon={<PlusIcon style={{ width: 16, height: 16 }} />} onClick={() => setShowAddModal(true)}>
@@ -833,10 +770,10 @@ const HomePage = () => {
                             {account.dailyLimit > 0 && (
                               <Box style={{ width: '100%', minWidth: '80px' }}>
                                 <Box
+                                  background="neutral100"
                                   style={{
                                     width: '100%',
                                     height: '6px',
-                                    background: theme.colors.neutral[100],
                                     borderRadius: '999px',
                                     overflow: 'hidden',
                                   }}

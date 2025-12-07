@@ -5,6 +5,15 @@ import PluginIcon from './components/PluginIcon';
 
 const name = pluginPkg.strapi.name;
 
+// Prefix translation keys with pluginId (required for Strapi)
+const prefixPluginTranslations = (data, pluginId) => {
+  const prefixed = {};
+  Object.keys(data).forEach((key) => {
+    prefixed[`${pluginId}.${key}`] = data[key];
+  });
+  return prefixed;
+};
+
 export default {
   register(app) {
     app.addMenuLink({
@@ -55,32 +64,24 @@ export default {
   },
 
   async registerTrads({ locales }) {
-    const importedTrads = {
-      en: () => import('./translations/en.json'),
-      de: () => import('./translations/de.json'),
-      es: () => import('./translations/es.json'),
-      fr: () => import('./translations/fr.json'),
-      pt: () => import('./translations/pt.json'),
-    };
-
-    const translatedLanguages = Object.keys(importedTrads).filter((lang) =>
-      locales.includes(lang)
+    const importedTrads = await Promise.all(
+      locales.map((locale) => {
+        return import(`./translations/${locale}.json`)
+          .then(({ default: data }) => {
+            return {
+              data: prefixPluginTranslations(data, pluginId),
+              locale,
+            };
+          })
+          .catch(() => {
+            return {
+              data: {},
+              locale,
+            };
+          });
+      })
     );
 
-    const translations = await Promise.all(
-      translatedLanguages.map((language) =>
-        importedTrads[language]()
-          .then(({ default: data }) => ({
-            data: data,
-            locale: language,
-          }))
-          .catch(() => ({
-            data: {},
-            locale: language,
-          }))
-      )
-    );
-
-    return Promise.resolve(translations);
+    return Promise.resolve(importedTrads);
   },
 };
