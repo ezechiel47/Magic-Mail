@@ -1,3 +1,10 @@
+## [2.0.4](https://github.com/Schero94/Magic-Mail/compare/v2.0.3...v2.0.4) (2025-12-08)
+
+
+### Bug Fixes
+
+* add GitHub templates for better open-source collaboration ([d412ece](https://github.com/Schero94/Magic-Mail/commit/d412eceb29455a494b1f839dc55308d783752bbe))
+
 ## [2.0.3](https://github.com/Schero94/Magic-Mail/compare/v2.0.2...v2.0.3) (2025-12-04)
 
 
