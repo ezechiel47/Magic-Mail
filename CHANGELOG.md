@@ -1,3 +1,10 @@
+## [2.2.2](https://github.com/Schero94/Magic-Mail/compare/v2.2.1...v2.2.2) (2025-12-14)
+
+
+### Bug Fixes
+
+* add debug mode documentation to README ([5fe8e26](https://github.com/Schero94/Magic-Mail/commit/5fe8e26b8b86ee8d5e55e3627b697c8f7fe1c683))
+
 ## [2.2.1](https://github.com/Schero94/Magic-Mail/compare/v2.2.0...v2.2.1) (2025-12-14)
 
 
