@@ -1,3 +1,10 @@
+## [2.2.3](https://github.com/Schero94/Magic-Mail/compare/v2.2.2...v2.2.3) (2025-12-14)
+
+
+### Bug Fixes
+
+* update release workflow for new npm token requirements ([a4900b4](https://github.com/Schero94/Magic-Mail/commit/a4900b40da2a7e0f95493b9770c45b51ebd787dd))
+
 ## [2.2.2](https://github.com/Schero94/Magic-Mail/compare/v2.2.1...v2.2.2) (2025-12-14)
 
 
