@@ -1,3 +1,10 @@
+## [2.2.5](https://github.com/Schero94/Magic-Mail/compare/v2.2.4...v2.2.5) (2025-12-14)
+
+
+### Bug Fixes
+
+* remove source folders from npm package ([d14411f](https://github.com/Schero94/Magic-Mail/commit/d14411f18e424f885cfec1dabe002d2367f6da83))
+
 ## [2.2.4](https://github.com/Schero94/Magic-Mail/compare/v2.2.3...v2.2.4) (2025-12-14)
 
 
