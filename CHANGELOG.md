@@ -1,3 +1,10 @@
+# [2.3.0](https://github.com/Schero94/Magic-Mail/compare/v2.2.6...v2.3.0) (2025-12-16)
+
+
+### Features
+
+* add WhatsApp messaging integration v2.4.0 ([a3e6dca](https://github.com/Schero94/Magic-Mail/commit/a3e6dca51b00782860e6120c71ec6605dd03ef89))
+
 ## [2.2.6](https://github.com/Schero94/Magic-Mail/compare/v2.2.5...v2.2.6) (2025-12-14)
 
 
