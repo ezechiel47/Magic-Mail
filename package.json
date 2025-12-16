@@ -1,15 +1,17 @@
 {
-  "version": "2.2.6",
+  "version": "2.4.0",
   "keywords": [
     "strapi",
     "strapi-plugin",
     "strapi-v5",
     "email",
+    "whatsapp",
     "multi-account",
     "smtp",
     "nodemailer",
     "email-routing",
-    "email-analytics"
+    "email-analytics",
+    "messaging"
   ],
   "type": "commonjs",
   "exports": {
@@ -48,11 +50,14 @@
     "@heroicons/react": "^2.2.0",
     "@strapi/design-system": "^2.0.0-rc.30",
     "@strapi/icons": "^2.0.0-rc.30",
+    "@whiskeysockets/baileys": "^7.0.0-rc.9",
     "decode-html": "^2.0.0",
     "form-data": "^4.0.4",
     "html-to-text": "^9.0.5",
     "mustache": "^4.2.0",
     "nodemailer": "^7.0.10",
+    "pino": "^9.5.0",
+    "qrcode": "^1.5.4",
     "react-email-editor": "^1.7.11",
     "react-intl": "^7.1.14",
     "striptags": "^3.2.0",
@@ -92,11 +97,11 @@
   "strapi": {
     "kind": "plugin",
     "name": "magic-mail",
-    "displayName": "MagicMail - Email Business Suite",
-    "description": "Multi-account email management with smart routing, failover, and analytics for Strapi v5"
+    "displayName": "MagicMail - Email & WhatsApp Suite",
+    "description": "Multi-account email management with WhatsApp messaging, smart routing, failover, and analytics for Strapi v5"
   },
   "name": "strapi-plugin-magic-mail",
-  "description": "Multi-account email management with smart routing, failover, and analytics for Strapi v5",
+  "description": "Multi-account email management with WhatsApp messaging, smart routing, failover, and analytics for Strapi v5",
   "license": "MIT",
   "author": "Schero D.",
   "repository": {

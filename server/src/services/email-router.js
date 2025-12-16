@@ -168,6 +168,32 @@ module.exports = ({ strapi }) => ({
     emailData.text = text;
     emailData.subject = subject;
 
+    // Get the matching routing rule to check for WhatsApp fallback
+    let matchedRule = null;
+    try {
+      const allRules = await strapi.documents('plugin::magic-mail.routing-rule').findMany({
+        filters: { isActive: true },
+        sort: [{ priority: 'desc' }],
+      });
+      
+      for (const rule of allRules) {
+        let matches = false;
+        switch (rule.matchType) {
+          case 'emailType': matches = rule.matchValue === type; break;
+          case 'recipient': matches = to && to.toLowerCase().includes(rule.matchValue.toLowerCase()); break;
+          case 'subject': matches = subject && subject.toLowerCase().includes(rule.matchValue.toLowerCase()); break;
+          case 'template': matches = emailData.template && emailData.template === rule.matchValue; break;
+          case 'custom': matches = emailData.customField && emailData.customField === rule.matchValue; break;
+        }
+        if (matches) {
+          matchedRule = rule;
+          break;
+        }
+      }
+    } catch (ruleError) {
+      strapi.log.warn('[magic-mail] [WARNING] Failed to check routing rules for WhatsApp fallback:', ruleError.message);
+    }
+
     try {
       // License check for premium features
       const licenseGuard = strapi.plugin('magic-mail').service('license-guard');
@@ -239,6 +265,45 @@ module.exports = ({ strapi }) => ({
       };
     } catch (error) {
       strapi.log.error('[magic-mail] [ERROR] Email send failed:', error);
+
+      // Check if WhatsApp fallback is enabled for this rule
+      if (matchedRule?.whatsappFallback) {
+        strapi.log.info('[magic-mail] [FALLBACK] Email failed, attempting WhatsApp fallback...');
+        
+        try {
+          const whatsapp = strapi.plugin('magic-mail').service('whatsapp');
+          const whatsappStatus = whatsapp.getStatus();
+          
+          if (whatsappStatus.isConnected) {
+            // Get phone number from email data or rule config
+            const phoneNumber = emailData.phoneNumber || emailData.whatsappPhone;
+            
+            if (phoneNumber) {
+              // Create a text-only message from the email content
+              const whatsappMessage = `*${subject}*\n\n${text || 'Email delivery failed. Please check your email settings.'}`;
+              
+              const waResult = await whatsapp.sendMessage(phoneNumber, whatsappMessage);
+              
+              if (waResult.success) {
+                strapi.log.info(`[magic-mail] [SUCCESS] WhatsApp fallback sent to ${phoneNumber}`);
+                return {
+                  success: true,
+                  fallbackUsed: 'whatsapp',
+                  phoneNumber: phoneNumber,
+                };
+              } else {
+                strapi.log.warn('[magic-mail] [WARNING] WhatsApp fallback failed:', waResult.error);
+              }
+            } else {
+              strapi.log.warn('[magic-mail] [WARNING] WhatsApp fallback enabled but no phone number provided');
+            }
+          } else {
+            strapi.log.warn('[magic-mail] [WARNING] WhatsApp fallback enabled but WhatsApp not connected');
+          }
+        } catch (waError) {
+          strapi.log.error('[magic-mail] [ERROR] WhatsApp fallback error:', waError.message);
+        }
+      }
 
       throw error;
     }
@@ -1441,6 +1506,196 @@ module.exports = ({ strapi }) => ({
         ...headers,
       },
     };
+  },
+
+  // ============================================================================
+  // UNIFIED MESSAGE API - Send via Email OR WhatsApp
+  // ============================================================================
+
+  /**
+   * Send a message via WhatsApp
+   * Same pattern as send() but for WhatsApp
+   * @param {Object} messageData - { phoneNumber, message, templateId, templateData }
+   * @returns {Promise<Object>} Send result
+   */
+  async sendWhatsApp(messageData) {
+    const {
+      phoneNumber,
+      message,
+      templateId = null,
+      templateData = {},
+    } = messageData;
+
+    // Validate phone number
+    if (!phoneNumber) {
+      throw new Error('Phone number is required for WhatsApp messages');
+    }
+
+    // Clean phone number (remove + and spaces)
+    const cleanPhone = phoneNumber.replace(/[^\d]/g, '');
+    if (cleanPhone.length < 10) {
+      throw new Error('Invalid phone number format. Use format: 491234567890 (country code + number)');
+    }
+
+    // Get WhatsApp service
+    const whatsapp = strapi.plugin('magic-mail').service('whatsapp');
+    const status = whatsapp.getStatus();
+
+    if (!status.isConnected) {
+      throw new Error('WhatsApp is not connected. Please connect WhatsApp first in the admin panel.');
+    }
+
+    // If template is specified, render it
+    let finalMessage = message;
+    if (templateId) {
+      try {
+        const template = await whatsapp.getTemplate(templateId);
+        if (template) {
+          finalMessage = template.content;
+          // Replace variables in template
+          Object.keys(templateData).forEach(key => {
+            finalMessage = finalMessage.replace(new RegExp(`{{${key}}}`, 'g'), templateData[key]);
+          });
+        }
+      } catch (error) {
+        strapi.log.warn(`[magic-mail] WhatsApp template ${templateId} not found, using plain message`);
+      }
+    }
+
+    if (!finalMessage) {
+      throw new Error('Message content is required');
+    }
+
+    // Send via WhatsApp
+    strapi.log.info(`[magic-mail] [WHATSAPP] Sending message to ${cleanPhone}`);
+    const result = await whatsapp.sendMessage(cleanPhone, finalMessage);
+
+    if (result.success) {
+      strapi.log.info(`[magic-mail] [SUCCESS] WhatsApp message sent to ${cleanPhone}`);
+      return {
+        success: true,
+        channel: 'whatsapp',
+        phoneNumber: cleanPhone,
+        jid: result.jid,
+      };
+    } else {
+      strapi.log.error(`[magic-mail] [ERROR] WhatsApp send failed: ${result.error}`);
+      throw new Error(result.error || 'Failed to send WhatsApp message');
+    }
+  },
+
+  /**
+   * Unified send method - automatically chooses Email or WhatsApp
+   * @param {Object} messageData - Combined email and WhatsApp data
+   * @param {string} messageData.channel - 'email' | 'whatsapp' | 'auto' (default: 'auto')
+   * @param {string} messageData.to - Email address (for email channel)
+   * @param {string} messageData.phoneNumber - Phone number (for whatsapp channel)
+   * @param {string} messageData.subject - Email subject
+   * @param {string} messageData.message - Plain text message (used for WhatsApp, or as email text)
+   * @param {string} messageData.html - HTML content (email only)
+   * @param {string} messageData.templateId - Template ID (works for both channels)
+   * @param {Object} messageData.templateData - Template variables
+   * @returns {Promise<Object>} Send result with channel info
+   */
+  async sendMessage(messageData) {
+    const {
+      channel = 'auto',
+      to,
+      phoneNumber,
+      subject,
+      message,
+      text,
+      html,
+      templateId,
+      templateData,
+      ...rest
+    } = messageData;
+
+    // Determine which channel to use
+    let useChannel = channel;
+    
+    if (channel === 'auto') {
+      // Auto-detect: prefer email if available, fallback to WhatsApp
+      if (to && to.includes('@')) {
+        useChannel = 'email';
+      } else if (phoneNumber) {
+        useChannel = 'whatsapp';
+      } else {
+        throw new Error('Either email (to) or phoneNumber is required');
+      }
+    }
+
+    strapi.log.info(`[magic-mail] [SEND] Channel: ${useChannel}, to: ${to || phoneNumber}`);
+
+    if (useChannel === 'whatsapp') {
+      // WhatsApp channel
+      if (!phoneNumber) {
+        throw new Error('Phone number is required for WhatsApp channel');
+      }
+
+      return await this.sendWhatsApp({
+        phoneNumber,
+        message: message || text || subject, // Use message, fallback to text or subject
+        templateId,
+        templateData,
+      });
+    } else {
+      // Email channel (default)
+      if (!to) {
+        throw new Error('Email address (to) is required for email channel');
+      }
+
+      const result = await this.send({
+        to,
+        subject,
+        text: text || message,
+        html,
+        templateId,
+        templateData,
+        phoneNumber, // Pass for WhatsApp fallback
+        ...rest,
+      });
+
+      return {
+        ...result,
+        channel: 'email',
+      };
+    }
+  },
+
+  /**
+   * Check WhatsApp connection status
+   * @returns {Object} Connection status
+   */
+  getWhatsAppStatus() {
+    try {
+      const whatsapp = strapi.plugin('magic-mail').service('whatsapp');
+      return whatsapp.getStatus();
+    } catch (error) {
+      return {
+        isConnected: false,
+        status: 'unavailable',
+        error: error.message,
+      };
+    }
+  },
+
+  /**
+   * Check if a phone number is registered on WhatsApp
+   * @param {string} phoneNumber - Phone number to check
+   * @returns {Promise<Object>} Check result
+   */
+  async checkWhatsAppNumber(phoneNumber) {
+    try {
+      const whatsapp = strapi.plugin('magic-mail').service('whatsapp');
+      return await whatsapp.checkNumber(phoneNumber);
+    } catch (error) {
+      return {
+        success: false,
+        exists: false,
+        error: error.message,
+      };
+    }
   },
 });
 

@@ -802,6 +802,11 @@ const RoutingRulesPage = () => {
                               Fallback: {rule.fallbackAccountName}
                             </Typography>
                           )}
+                          {rule.whatsappFallback && (
+                            <Badge backgroundColor="success100" textColor="success700" size="S">
+                              + WhatsApp
+                            </Badge>
+                          )}
                         </Flex>
                       </Td>
 
@@ -886,6 +891,7 @@ const RuleModal = ({ rule, accounts, onClose, onSave }) => {
     matchValue: rule?.matchValue || '',
     accountName: rule?.accountName || '',
     fallbackAccountName: rule?.fallbackAccountName || '',
+    whatsappFallback: rule?.whatsappFallback || false,
   });
 
   const handleChange = (field, value) => {
@@ -1057,6 +1063,44 @@ const RuleModal = ({ rule, accounts, onClose, onSave }) => {
                   Use this account if the target account is unavailable or rate-limited
                 </Field.Hint>
               </Field.Root>
+
+              {/* WhatsApp Fallback */}
+              <Box 
+                padding={4} 
+                background={formData.whatsappFallback ? theme.colors.success[100] : theme.colors.neutral[100]}
+                hasRadius
+                style={{ 
+                  width: '100%',
+                  border: formData.whatsappFallback ? `2px solid ${theme.colors.success[600]}` : `1px solid ${theme.colors.neutral[200]}`,
+                  borderRadius: theme.borderRadius.md,
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <Flex gap={3} alignItems="center">
+                  <Toggle
+                    checked={formData.whatsappFallback}
+                    onChange={() => handleChange('whatsappFallback', !formData.whatsappFallback)}
+                  />
+                  <Box style={{ flex: 1 }}>
+                    <Flex alignItems="center" gap={2}>
+                      <Typography fontWeight="semiBold">
+                        WhatsApp Fallback
+                      </Typography>
+                      {formData.whatsappFallback && (
+                        <Badge backgroundColor="success600" textColor="neutral0" size="S">
+                          ENABLED
+                        </Badge>
+                      )}
+                    </Flex>
+                    <Typography variant="pi" textColor="neutral600" marginTop={1}>
+                      {formData.whatsappFallback 
+                        ? 'If ALL email accounts fail, message will be sent via WhatsApp (requires connected WhatsApp & phone number in email data)'
+                        : 'Enable to use WhatsApp as last-resort fallback when email delivery fails'
+                      }
+                    </Typography>
+                  </Box>
+                </Flex>
+              </Box>
 
               {/* Priority */}
               <Field.Root style={{ width: '100%' }}>

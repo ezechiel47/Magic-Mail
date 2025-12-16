@@ -12,15 +12,17 @@
 
 **Stop fighting with .env files and email configuration!** MagicMail brings professional email management to Strapi v5 with:
 
-- ✅ **6 Email Providers** - Gmail, Microsoft 365, Yahoo, SMTP, SendGrid, Mailgun
-- ✅ **OAuth 2.0 Authentication** - No passwords needed for Gmail, Microsoft, Yahoo
-- ✅ **Smart Routing Rules** - Route emails by type, recipient, subject, or custom conditions
-- ✅ **Automatic Failover** - Never lose an email when rate limits hit
-- ✅ **Beautiful Admin UI** - Manage everything from Strapi Admin Panel
-- ✅ **Zero Configuration** - No .env files, everything in the database
-- ✅ **Email Designer Compatible** - Works seamlessly with strapi-plugin-email-designer-5
-- ✅ **GDPR/CAN-SPAM Compliant** - Built-in List-Unsubscribe headers
-- ✅ **Professional Security** - TLS 1.2+, DKIM, SPF, DMARC validation
+- **6 Email Providers** - Gmail, Microsoft 365, Yahoo, SMTP, SendGrid, Mailgun
+- **WhatsApp Messaging** - Send messages via WhatsApp (FREE!) 
+- **OAuth 2.0 Authentication** - No passwords needed for Gmail, Microsoft, Yahoo
+- **Smart Routing Rules** - Route emails by type, recipient, subject, or custom conditions
+- **WhatsApp Fallback** - Auto-send via WhatsApp if email fails
+- **Automatic Failover** - Never lose an email when rate limits hit
+- **Beautiful Admin UI** - Manage everything from Strapi Admin Panel
+- **Zero Configuration** - No .env files, everything in the database
+- **Email Designer Compatible** - Works seamlessly with strapi-plugin-email-designer-5
+- **GDPR/CAN-SPAM Compliant** - Built-in List-Unsubscribe headers
+- **Professional Security** - TLS 1.2+, DKIM, SPF, DMARC validation
 
 ---
 
@@ -72,7 +74,163 @@
 
 ---
 
-## 🚀 Quick Start
+## WhatsApp Messaging (NEW!)
+
+MagicMail now includes **FREE WhatsApp messaging** - send messages directly from your Strapi application!
+
+### Why WhatsApp?
+
+| Feature | Email | WhatsApp |
+|---------|-------|----------|
+| **Open Rate** | ~20% | ~98% |
+| **Delivery Speed** | Minutes | Instant |
+| **Spam Folder Risk** | High | None |
+| **User Preference** | Declining | Growing |
+| **Cost** | Varies | FREE |
+
+### Quick Setup (4 Steps)
+
+1. **Navigate** to Admin Panel -> MagicMail -> WhatsApp
+2. **Connect** - Scan QR code with WhatsApp mobile app
+3. **Verify** - Check connection status shows "Connected"
+4. **Send** - Start sending messages programmatically!
+
+### Sending WhatsApp Messages
+
+**Method 1: Direct WhatsApp Send**
+
+```javascript
+// Send WhatsApp message directly
+await strapi.plugin('magic-mail').service('whatsapp').sendMessage(
+  '+491234567890',  // Phone number with country code
+  'Hello! This is a test message from MagicMail.'
+);
+```
+
+**Method 2: Unified Messaging API**
+
+```javascript
+// Send via unified API - auto-detects channel
+await strapi.plugin('magic-mail').service('email-router').sendMessage({
+  channel: 'whatsapp',  // or 'email' or 'auto'
+  phoneNumber: '+491234567890',
+  message: 'Your order #12345 has been shipped!'
+});
+
+// Auto-detect: sends WhatsApp if phoneNumber provided, email if to provided
+await strapi.plugin('magic-mail').service('email-router').sendMessage({
+  channel: 'auto',
+  phoneNumber: '+491234567890',  // Has phone -> WhatsApp
+  message: 'Shipping notification'
+});
+
+await strapi.plugin('magic-mail').service('email-router').sendMessage({
+  channel: 'auto',
+  to: 'user@example.com',  // Has email -> Email
+  subject: 'Shipping Notification',
+  message: 'Your order has been shipped!'
+});
+```
+
+**Method 3: REST API**
+
+```javascript
+// POST /api/magic-mail/send-whatsapp
+await fetch('/api/magic-mail/send-whatsapp', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    phoneNumber: '+491234567890',
+    message: 'Hello from MagicMail!'
+  })
+});
+
+// POST /api/magic-mail/send-message (unified)
+await fetch('/api/magic-mail/send-message', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    channel: 'whatsapp',
+    phoneNumber: '+491234567890',
+    message: 'Order confirmed!'
+  })
+});
+```
+
+### WhatsApp Use Cases
+
+**1. Email Fallback**
+If email delivery fails, automatically send via WhatsApp:
+
+```javascript
+// In Routing Rules, enable "WhatsApp Fallback"
+// Set "WhatsApp Phone Field" to 'phoneNumber'
+
+await strapi.plugin('magic-mail').service('email-router').send({
+  to: 'user@example.com',
+  phoneNumber: '+491234567890',  // Fallback phone
+  subject: 'Important Update',
+  html: '<h1>Update</h1>',
+  type: 'transactional'
+});
+
+// If email fails -> auto-sends via WhatsApp!
+```
+
+**2. Admin Notifications**
+Get instant WhatsApp alerts for critical events:
+
+```javascript
+// Example: Notify admin when email quota exceeded
+const adminPhone = '+4917612345678';
+
+await strapi.plugin('magic-mail').service('whatsapp').sendMessage(
+  adminPhone,
+  '[ALERT] Email quota exceeded for SendGrid account!'
+);
+```
+
+**3. Urgent Transactional Messages**
+Send time-sensitive messages instantly:
+
+```javascript
+// OTP/Verification codes
+await strapi.plugin('magic-mail').service('whatsapp').sendMessage(
+  userPhone,
+  `Your verification code: 123456\n\nValid for 5 minutes.`
+);
+
+// Order updates
+await strapi.plugin('magic-mail').service('whatsapp').sendMessage(
+  customerPhone,
+  `Order #${orderId} is out for delivery!\nTrack: ${trackingUrl}`
+);
+```
+
+### WhatsApp Status API
+
+```javascript
+// Check connection status
+const status = await strapi.plugin('magic-mail').service('whatsapp').getStatus();
+// { isConnected: true, phoneNumber: '+49...', name: 'Business Account' }
+
+// Check if phone number is on WhatsApp
+const exists = await strapi.plugin('magic-mail').service('whatsapp').checkNumber('+491234567890');
+// { exists: true, jid: '491234567890@s.whatsapp.net' }
+```
+
+### Integration with Magic-Link Plugin
+
+When both **MagicMail** and **Magic-Link** are installed:
+
+- Magic-Link automatically uses MagicMail's WhatsApp service
+- Only ONE WhatsApp connection needed (managed here in MagicMail)
+- Send magic links via WhatsApp from Magic-Link settings
+- Unified WhatsApp management for all plugins
+
+---
+
+## Quick Start
 
 ### Installation
 

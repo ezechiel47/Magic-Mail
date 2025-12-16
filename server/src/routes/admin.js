@@ -464,6 +464,106 @@ module.exports = {
         description: 'Test template-version relations',
       },
     },
+    // WhatsApp Routes
+    {
+      method: 'GET',
+      path: '/whatsapp/available',
+      handler: 'whatsapp.checkAvailable',
+      config: {
+        policies: ['admin::isAuthenticatedAdmin'],
+        description: 'Check if WhatsApp/Baileys is available',
+      },
+    },
+    {
+      method: 'GET',
+      path: '/whatsapp/status',
+      handler: 'whatsapp.getStatus',
+      config: {
+        policies: ['admin::isAuthenticatedAdmin'],
+        description: 'Get WhatsApp connection status',
+      },
+    },
+    {
+      method: 'POST',
+      path: '/whatsapp/connect',
+      handler: 'whatsapp.connect',
+      config: {
+        policies: ['admin::isAuthenticatedAdmin'],
+        description: 'Connect to WhatsApp (generates QR if needed)',
+      },
+    },
+    {
+      method: 'POST',
+      path: '/whatsapp/disconnect',
+      handler: 'whatsapp.disconnect',
+      config: {
+        policies: ['admin::isAuthenticatedAdmin'],
+        description: 'Disconnect from WhatsApp',
+      },
+    },
+    {
+      method: 'POST',
+      path: '/whatsapp/send-test',
+      handler: 'whatsapp.sendTest',
+      config: {
+        policies: ['admin::isAuthenticatedAdmin'],
+        description: 'Send a test WhatsApp message',
+      },
+    },
+    {
+      method: 'POST',
+      path: '/whatsapp/send-template',
+      handler: 'whatsapp.sendTemplateMessage',
+      config: {
+        policies: ['admin::isAuthenticatedAdmin'],
+        description: 'Send WhatsApp message using template',
+      },
+    },
+    {
+      method: 'POST',
+      path: '/whatsapp/check-number',
+      handler: 'whatsapp.checkNumber',
+      config: {
+        policies: ['admin::isAuthenticatedAdmin'],
+        description: 'Check if phone number is on WhatsApp',
+      },
+    },
+    {
+      method: 'GET',
+      path: '/whatsapp/templates',
+      handler: 'whatsapp.getTemplates',
+      config: {
+        policies: ['admin::isAuthenticatedAdmin'],
+        description: 'Get all WhatsApp message templates',
+      },
+    },
+    {
+      method: 'POST',
+      path: '/whatsapp/templates',
+      handler: 'whatsapp.saveTemplate',
+      config: {
+        policies: ['admin::isAuthenticatedAdmin'],
+        description: 'Save a WhatsApp message template',
+      },
+    },
+    {
+      method: 'DELETE',
+      path: '/whatsapp/templates/:templateName',
+      handler: 'whatsapp.deleteTemplate',
+      config: {
+        policies: ['admin::isAuthenticatedAdmin'],
+        description: 'Delete a WhatsApp message template',
+      },
+    },
+    {
+      method: 'GET',
+      path: '/whatsapp/session',
+      handler: 'whatsapp.getSession',
+      config: {
+        policies: ['admin::isAuthenticatedAdmin'],
+        description: 'Get WhatsApp session info',
+      },
+    },
   ],
 };
 

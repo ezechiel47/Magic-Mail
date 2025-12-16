@@ -8,6 +8,7 @@ const license = require('./license');
 const emailDesigner = require('./email-designer');
 const analytics = require('./analytics');
 const test = require('./test');
+const whatsapp = require('./whatsapp');
 
 module.exports = {
   controller,
@@ -18,4 +19,5 @@ module.exports = {
   emailDesigner,
   analytics,
   test,
+  whatsapp,
 };

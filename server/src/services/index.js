@@ -6,6 +6,7 @@ const oauth = require('./oauth');
 const licenseGuard = require('./license-guard');
 const emailDesigner = require('./email-designer');
 const analytics = require('./analytics');
+const whatsapp = require('./whatsapp');
 
 module.exports = {
   'email-router': emailRouter,
@@ -14,4 +15,5 @@ module.exports = {
   'license-guard': licenseGuard,
   'email-designer': emailDesigner,
   analytics,
+  whatsapp,
 };

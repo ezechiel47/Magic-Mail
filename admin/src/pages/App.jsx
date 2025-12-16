@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Box, Tabs, Flex } from '@strapi/design-system';
-import { EnvelopeIcon, FunnelIcon, DocumentTextIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import { EnvelopeIcon, FunnelIcon, DocumentTextIcon, ChartBarIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
 import HomePage from './HomePage';
 import RoutingRules from './RoutingRules';
 import TemplateList from './EmailDesigner/TemplateList';
 import EditorPage from './EmailDesigner/EditorPage';
 import Analytics from './Analytics';
+import WhatsAppPage from './WhatsApp';
 import LicenseGuard from '../components/LicenseGuard';
 import { useLicense } from '../hooks/useLicense';
 
@@ -26,6 +27,7 @@ const App = () => {
     if (location.pathname.includes('/analytics')) return 'analytics';
     if (location.pathname.includes('/routing')) return 'routing';
     if (location.pathname.includes('/designer') && !isEditorRoute) return 'templates';
+    if (location.pathname.includes('/whatsapp')) return 'whatsapp';
     return 'accounts';
   };
   
@@ -37,6 +39,7 @@ const App = () => {
     if (tab === 'routing') navigate('/plugins/magic-mail/routing');
     if (tab === 'templates') navigate('/plugins/magic-mail/designer');
     if (tab === 'analytics') navigate('/plugins/magic-mail/analytics');
+    if (tab === 'whatsapp') navigate('/plugins/magic-mail/whatsapp');
   };
   
   // If we're in editor, render editor directly without tabs
@@ -81,6 +84,12 @@ const App = () => {
                 </Flex>
               </Tabs.Trigger>
             )}
+            <Tabs.Trigger value="whatsapp">
+              <Flex gap={2} alignItems="center">
+                <ChatBubbleLeftIcon style={{ width: 16, height: 16 }} />
+                WhatsApp
+              </Flex>
+            </Tabs.Trigger>
           </Tabs.List>
           
           <Tabs.Content value="accounts">
@@ -102,6 +111,10 @@ const App = () => {
               <Analytics />
             </Tabs.Content>
           )}
+          
+          <Tabs.Content value="whatsapp">
+            <WhatsAppPage />
+          </Tabs.Content>
         </Tabs.Root>
       </Box>
     </LicenseGuard>
